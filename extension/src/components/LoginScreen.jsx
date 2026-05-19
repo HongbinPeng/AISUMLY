@@ -30,7 +30,7 @@ export default function LoginScreen() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <h2>{isLogin ? '登录' : '注册'}灵犀</h2>
+        <h2>{isLogin ? '登录' : '注册'} AISumly</h2>
 
         {error && <div className="error-msg">{error}</div>}
 

@@ -13,8 +13,10 @@ export default function ChatArea({ conversation, previewURLs }) {
   const messagesEndRef = useRef(null)
 
   // Auto-scroll to bottom
+  // Use smooth scroll during streaming, instant when loading history
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const behavior = streaming ? 'smooth' : 'instant'
+    messagesEndRef.current?.scrollIntoView({ behavior })
   }, [messages, streaming])
 
   // No conversation selected AND not a temp conversation
