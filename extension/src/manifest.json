@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "灵犀",
+  "version": "0.1.0",
+  "description": "学习型截图助手 - 截图提问，多轮追问，历史沉淀，按天复盘",
+  "icons": {
+    "16": "icons/灵犀-16.png",
+    "48": "icons/灵犀-48.png",
+    "128": "icons/灵犀-128.png"
+  },
+  "action": {
+    "default_title": "灵犀"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+P"
+      },
+      "description": "打开灵犀侧面板"
+    }
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  }
+}

@@ -1,0 +1,555 @@
+{
+	"info": {
+		"_postman_id": "aisumly-mvp-collection",
+		"name": "AISumly MVP API",
+		"description": "学习型截图助手 - MVP 版本后端接口测试集合",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "注册",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\",\n  \"nickname\": \"TestUser\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.access_token) {",
+									"        pm.collectionVariables.set('access_token', json.data.access_token);",
+									"        pm.collectionVariables.set('refresh_token', json.data.refresh_token);",
+									"        console.log('Tokens saved to collection variables');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "登录",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.access_token) {",
+									"        pm.collectionVariables.set('access_token', json.data.access_token);",
+									"        pm.collectionVariables.set('refresh_token', json.data.refresh_token);",
+									"        console.log('Tokens saved to collection variables');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "刷新 Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.access_token) {",
+									"        pm.collectionVariables.set('access_token', json.data.access_token);",
+									"        pm.collectionVariables.set('refresh_token', json.data.refresh_token);",
+									"        console.log('Tokens refreshed');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "获取当前用户",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "me"]
+						}
+					}
+				},
+				{
+					"name": "退出登录",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Conversations",
+			"item": [
+				{
+					"name": "获取会话列表",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/conversations?limit=30&cursor=",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "conversations"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "30"
+								},
+								{
+									"key": "cursor",
+									"value": ""
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "获取会话消息历史",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/conversations/:id/messages?limit=50&before_sequence_no=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "conversations", ":id", "messages"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "before_sequence_no",
+									"value": "0"
+								}
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "更新会话标题",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"React 状态更新机制\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/conversations/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "conversations", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Files",
+			"item": [
+				{
+					"name": "创建图片上传任务",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"files\": [\n    {\n      \"filename\": \"screenshot-1.png\",\n      \"mime_type\": \"image/png\",\n      \"size_bytes\": 123456,\n      \"sha256\": \"\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/images/upload-urls",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "files", "images", "upload-urls"]
+						}
+					}
+				},
+				{
+					"name": "确认图片上传完成",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"file_ids\": [66, 67]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/images/confirm",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "files", "images", "confirm"]
+						}
+					}
+				},
+				{
+					"name": "获取图片预览 URL",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/:id/preview-url",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "files", ":id", "preview-url"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Chat",
+			"item": [
+				{
+					"name": "发送消息并流式获取 AI 回复",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "text/event-stream"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"client_request_id\": \"{{$guid}}\",\n  \"conversation_id\": 0,\n  \"client_conversation_id\": \"\",\n  \"create_conversation\": true,\n  \"content\": \"你好，请介绍一下你自己\",\n  \"file_ids\": [],\n  \"source_url\": \"\",\n  \"source_title\": \"\",\n  \"context_recent_turns\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/chat/stream",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "chat", "stream"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Messages",
+			"item": [
+				{
+					"name": "更新消息状态",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"is_favorite\": true,\n  \"is_understood\": false,\n  \"is_review_later\": true,\n  \"user_note\": \"这条后面要复习\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/messages/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "messages", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Summaries",
+			"item": [
+				{
+					"name": "生成每日总结",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/api/v1/summaries/daily/{{today}}/generate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "summaries", "daily", "{{today}}", "generate"]
+						}
+					}
+				},
+				{
+					"name": "查询每日总结",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/v1/summaries/daily/{{today}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "summaries", "daily", "{{today}}"]
+						}
+					}
+				},
+				{
+					"name": "重新生成每日总结",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/api/v1/summaries/daily/{{today}}/regenerate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "summaries", "daily", "{{today}}", "regenerate"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

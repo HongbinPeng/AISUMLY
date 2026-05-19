@@ -1,0 +1,20 @@
+package handler
+
+import "aisumly/backend/internal/service"
+
+type Dependencies struct {
+	Auth          *service.AuthService
+	Conversations *service.ConversationService
+	Chat          *service.ChatService
+	Files         *service.FileService
+	Messages      *service.MessageService
+	Summaries     *service.SummaryService
+}
+
+type Handler struct {
+	deps Dependencies
+}
+
+func New(deps Dependencies) *Handler {
+	return &Handler{deps: deps}
+}

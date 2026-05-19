@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学习型截图助手 - 学术极简 UI 系统</title>
+  <style>
+    /* ==========================================================================
+       1. 顶级设计系统变量 (Design Tokens)
+       ========================================================================== */
+    :root {
+      --bg-main: #F6F6F7;
+      --bg-surface: #FFFFFF;
+      --bg-glass: rgba(255, 255, 255, 0.45);
+      --bg-glass-solid: rgba(255, 255, 255, 0.85);
+      --bg-ai-bubble: #F1F1F4;
+      --bg-code: #1E1E24;
+      
+      --brand-primary: #2563EB;
+      --brand-primary-rgb: 37, 99, 235;
+      
+      --text-primary: #18181B;
+      --text-secondary: #52525B;
+      --text-muted: #A1A1AA;
+      
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --border-glass: rgba(255, 255, 255, 0.6);
+      --border-focus: rgba(37, 99, 235, 0.4);
+      
+      --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+      --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+      --shadow-floating: 0 12px 40px -12px rgba(0, 0, 0, 0.08);
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      
+      --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+      --anim-duration: 180ms;
+    }
+
+    [data-theme="dark"] {
+      --bg-main: #121212;
+      --bg-surface: #18181C;
+      --bg-glass: rgba(24, 24, 28, 0.55);
+      --bg-glass-solid: rgba(24, 24, 28, 0.9);
+      --bg-ai-bubble: #23232A;
+      --bg-code: #0B0B0D;
+      
+      --brand-primary: #3B82F6;
+      --brand-primary-rgb: 59, 130, 246;
+      
+      --text-primary: #E4E4E7;
+      --text-secondary: #A1A1AA;
+      --text-muted: #52525B;
+      
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-glass: rgba(255, 255, 255, 0.04);
+      --border-focus: rgba(59, 130, 246, 0.4);
+      
+      --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+      --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+      --shadow-floating: 0 12px 40px -12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ==========================================================================
+       2. 基础重置与重构
+       ========================================================================== */
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--anim-duration) var(--ease-smooth);
+    }
+    button, input, textarea { font-family: inherit; color: inherit; }
+
+    /* 全局微玻璃组件样式 */
+    .glass-panel {
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px) saturate(120%);
+      -webkit-backdrop-filter: blur(20px) saturate(120%);
+      border: 1px solid var(--border-glass);
+      box-shadow: var(--shadow-glass);
+    }
+
+    /* ==========================================================================
+       3. 演示架构控制台 (Top Deck Controller)
+       ========================================================================== */
+    .deck-controller {
+      height: 52px;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      z-index: 999;
+    }
+    .deck-tabs { display: flex; gap: 4px; }
+    .deck-tab {
+      background: transparent; border: 1px solid transparent; padding: 6px 14px;
+      border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500;
+      color: var(--text-secondary); transition: all var(--anim-duration) var(--ease-smooth);
+    }
+    .deck-tab:hover { color: var(--text-primary); background: var(--bg-main); }
+    .deck-tab.active { color: #FFFFFF; background: var(--brand-primary); }
+    
+    .util-btn {
+      background: transparent; border: 1px solid var(--border-subtle);
+      width: 32px; height: 32px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: all var(--anim-duration) var(--ease-smooth);
+    }
+    .util-btn:hover { background: var(--bg-main); border-color: var(--text-muted); }
+
+    .stage-container { flex: 1; position: relative; overflow: hidden; }
+    .stage-view { position: absolute; inset: 0; display: none; width: 100%; height: 100%; overflow: hidden; }
+    .stage-view.active { display: flex; }
+
+    /* ==========================================================================
+       4. 模块一：浏览器扩展端 (Side Panel Mockup)
+       ========================================================================== */
+    .mock-browser-env { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--bg-main); }
+    .side-panel-container {
+      width: 360px; height: 92%; border-radius: var(--radius-lg);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .panel-navbar {
+      height: 48px; padding: 0 16px; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .panel-source { font-size: 12px; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+    .panel-source span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10B981; }
+    
+    .panel-chat-stream { flex: 1; padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+    .bubble-wrap { display: flex; flex-direction: column; width: 100%; }
+    .bubble-wrap.user-side { align-items: flex-end; }
+    .bubble-wrap.ai-side { align-items: flex-start; }
+    
+    .screenshot-preview {
+      width: 100%; max-width: 260px; border-radius: var(--radius-md); overflow: hidden;
+      border: 1px solid var(--border-subtle); margin-bottom: 6px; box-shadow: var(--shadow-subtle);
+    }
+    .screenshot-preview img { width: 100%; display: block; }
+    
+    .bubble { padding: 11px 15px; font-size: 13.5px; line-height: 1.55; box-shadow: var(--shadow-subtle); }
+    .user-side .bubble {
+      background: var(--brand-primary); color: #FFFFFF;
+      border-radius: var(--radius-lg) var(--radius-lg) 2px var(--radius-lg);
+    }
+    .ai-side .bubble {
+      background: var(--bg-ai-bubble); color: var(--text-primary);
+      border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 2px;
+      border: 1px solid var(--border-subtle);
+    }
+    
+    .panel-input-deck { padding: 14px; border-top: 1px solid var(--border-subtle); background: var(--bg-surface); }
+    .attachment-badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(var(--brand-primary-rgb), 0.08);
+      color: var(--brand-primary); font-size: 11px; font-weight: 600; border-radius: var(--radius-sm); margin-bottom: 8px;
+    }
+    .input-compose-box {
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px;
+      display: flex; flex-direction: column; gap: 8px; background: var(--bg-main); transition: all var(--anim-duration);
+    }
+    .input-compose-box:focus-within { border-color: var(--brand-primary); box-shadow: 0 0 0 2px var(--border-focus); }
+    .input-compose-box textarea {
+      width: 100%; border: none; background: transparent; outline: none; resize: none; height: 44px;
+      font-size: 13px; line-height: 1.5; color: var(--text-primary);
+    }
+    .input-actions-row { display: flex; justify-content: space-between; align-items: center; }
+    .action-trigger-btn { background: var(--brand-primary); color: #FFFFFF; border: none; padding: 5px 14px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; transition: all var(--anim-duration); }
+    .action-trigger-btn:hover { background: var(--brand-primary-hover); }
+
+    /* ==========================================================================
+       5. 模块二：Web 核心多栏工作台 (3-Column Architecture)
+       ========================================================================== */
+    .web-container { width: 100%; height: 100%; display: flex; background: var(--bg-surface); }
+    
+    /* 栏目 1: 左侧会话树 */
+    .web-left-column {
+      width: 260px; height: 100%; border-right: 1px solid var(--border-subtle);
+      background: var(--bg-main); display: flex; flex-direction: column; transition: background var(--anim-duration);
+    }
+    .left-header { height: 64px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+    .left-header h2 { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.3px; }
+    .session-timeline-box { flex: 1; overflow-y: auto; padding: 0 10px 20px; }
+    .timeline-group-title { font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 12px 10px 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .session-node {
+      padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer; display: flex; flex-direction: column;
+      gap: 4px; border: 1px solid transparent; transition: all var(--anim-duration) var(--ease-smooth);
+    }
+    .session-node:hover { background: var(--bg-surface); border-color: var(--border-subtle); }
+    .session-node.active { background: var(--bg-surface); border-color: var(--border-subtle); box-shadow: var(--shadow-subtle); }
+    .session-node .node-title { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .session-node .node-meta { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; }
+
+    /* 栏目 2: 中间消息主体流 */
+    .web-middle-column { flex: 1; height: 100%; display: flex; flex-direction: column; background: var(--bg-surface); position: relative; }
+    .middle-header {
+      height: 64px; padding: 0 28px; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .middle-header .title-area h1 { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+    .middle-header .title-area p { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    
+    .middle-chat-canvas { flex: 1; overflow-y: auto; padding: 32px 10%; display: flex; flex-direction: column; gap: 28px; }
+    
+    /* 工业级开发风格 Markdown 代码解析块 */
+    .code-block-wrapper {
+      width: 100%; border-radius: var(--radius-md); background: var(--bg-code); border: 1px solid rgba(255,255,255,0.05);
+      margin-top: 10px; overflow: hidden; font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+    }
+    .code-header { height: 32px; padding: 0 14px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.02); }
+    .code-content { padding: 14px; font-size: 12.5px; color: #E4E4E7; overflow-x: auto; line-height: 1.6; }
+    .code-keyword { color: #F43F5E; }
+    .code-string { color: #10B981; }
+
+    /* 栏目 3: 右侧隐藏面板 (隐藏扩展舱) */
+    .web-right-column {
+      width: 280px; height: 100%; border-left: 1px solid var(--border-subtle); background: var(--bg-main);
+      display: flex; flex-direction: column; transition: all var(--anim-duration) var(--ease-smooth);
+    }
+    .web-right-column.collapsed { width: 0; border-left-color: transparent; overflow: hidden; }
+    .right-header { height: 64px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); }
+    .right-header h3 { font-size: 13px; font-weight: 600; }
+    .right-content { padding: 20px; font-size: 12.5px; display: flex; flex-direction: column; gap: 16px; }
+    .meta-card { padding: 12px; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+    .meta-card-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+
+    /* ==========================================================================
+       6. 模块三：每日总结页 (Premium Magazine Architecture)
+       ========================================================================== */
+    .magazine-scroll-wrapper { flex: 1; overflow-y: auto; background: var(--bg-surface); width: 100%; }
+    .magazine-layout { width: 100%; max-width: 780px; margin: 0 auto; padding: 80px 40px; }
+    
+    /* 纯正纸张杂志风排头 */
+    .mag-masthead { border-bottom: 2px solid var(--text-primary); padding-bottom: 16px; margin-bottom: 48px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .mag-journal-title { font-size: 42px; font-weight: 800; letter-spacing: -1.5px; font-family: "Georgia", serif; line-height: 0.9; }
+    .mag-date-stamp { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; }
+    
+    .mag-editorial { font-size: 16px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 56px; font-style: italic; padding-left: 24px; border-left: 3px solid var(--border-subtle); }
+    
+    .mag-grid-section { display: flex; flex-direction: column; gap: 40px; }
+    .mag-topic-block { border-bottom: 1px solid var(--border-subtle); padding-bottom: 36px; }
+    .mag-topic-block:last-child { border-bottom: none; }
+    .mag-topic-tag { font-size: 11px; font-weight: 700; color: var(--brand-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .mag-topic-heading { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; margin-bottom: 12px; }
+    .mag-topic-body { font-size: 14.5px; line-height: 1.65; color: var(--text-secondary); margin-bottom: 24px; text-align: justify; }
+    
+    /* 折叠证据面板 */
+    .evidence-accordion { border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-main); transition: background var(--anim-duration); }
+    .evidence-trigger { padding: 12px 16px; font-size: 12.5px; font-weight: 600; color: var(--text-primary); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .evidence-trigger:hover { background: rgba(0,0,0,0.02); }
+    .evidence-trigger svg { transition: transform 200ms ease; width: 14px; height: 14px; fill: currentColor; }
+    .evidence-trigger.expanded svg { transform: rotate(180deg); }
+    
+    .evidence-content { max-height: 0; overflow: hidden; transition: max-height 200ms var(--ease-smooth); }
+    .evidence-content.open { max-height: 1000px; border-top: 1px solid var(--border-subtle); }
+    .evidence-inner-item { padding: 16px; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 16px; }
+    .evidence-inner-item:last-child { border-bottom: none; }
+    .evidence-mini-capture { width: 72px; height: 48px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); overflow: hidden; flex-shrink: 0; }
+    .evidence-mini-capture img { width: 100%; height: 100%; object-fit: cover; }
+    .evidence-qa-flow { font-size: 13px; line-height: 1.5; }
+    .qa-q { font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .qa-a { color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+
+  <div class="deck-controller glass-panel">
+    <div class="deck-tabs">
+      <button class="deck-tab active" onclick="routeTo('view-extension', this)">浏览器扩展端</button>
+      <button class="deck-tab" onclick="routeTo('view-web-workspace', this)">Web端工作台</button>
+      <button class="deck-tab" onclick="routeTo('view-web-summary', this)">每日复盘杂志</button>
+    </div>
+    <button class="util-btn" onclick="mutateTheme()" title="切换明暗色彩空间">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10 5 5 0 000-10z"/></svg>
+    </button>
+  </div>
+
+  <div class="stage-container">
+    
+    <div id="view-extension" class="stage-view active">
+      <div class="mock-browser-env">
+        <div class="side-panel-container glass-panel">
+          <div class="panel-navbar">
+            <div class="panel-source"><span></span> react.dev/docs/hooks</div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </div>
+          <div class="panel-chat-stream">
+            <div class="bubble-wrap user-side">
+              <div class="screenshot-preview">
+                <img src="https://images.unsplash.com/photo-1618477388954-7852f32655ec?q=80&w=600&auto=format&fit=crop" alt="代码报错图">
+              </div>
+              <div class="bubble">这段 React 状态更新为什么没有立即生效？</div>
+            </div>
+            <div class="bubble-wrap ai-side">
+              <div class="bubble">React 会为了性能将多次状态更新进行“批处理”（Batching）。在事件处理函数执行完毕前，闭包内的旧状态变量并不会发生改变。如果需要立即拿到最新的值，建议使用 updater function 形式，或者在 useEffect 中监听。</div>
+            </div>
+          </div>
+          <div class="panel-input-deck">
+            <div class="attachment-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+              已挂载 1 张截图
+            </div>
+            <div class="input-compose-box">
+              <textarea placeholder="键入追问内容... (支持 Ctrl+V 粘贴新截图)"></textarea>
+              <div class="input-actions-row">
+                <span style="font-size: 11px; color: var(--text-muted);">极简低干扰模式</span>
+                <button class="action-trigger-btn">发送</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-web-workspace" class="stage-view">
+      <div class="web-container">
+        
+        <aside class="web-left-column">
+          <div class="left-header">
+            <h2>会话归档历史</h2>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+          <div class="session-timeline-box">
+            <div class="timeline-group-title">今天</div>
+            <div class="session-node active">
+              <div class="node-title">React 状态更新与闭包机制</div>
+              <div class="node-meta"><span>2 轮追问</span><span>14:30</span></div>
+            </div>
+            <div class="session-node">
+              <div class="node-title">Go 语言无缓冲 Channel 死锁分析</div>
+              <div class="node-meta"><span>4 轮追问</span><span>10:15</span></div>
+            </div>
+            <div class="timeline-group-title">昨天</div>
+            <div class="session-node">
+              <div class="node-title">Flex 弹性盒多行轴对齐塌陷</div>
+              <div class="node-meta"><span>1 轮问答</span><span>昨天</span></div>
+            </div>
+          </div>
+        </aside>
+        
+        <main class="web-middle-column">
+          <header class="middle-header">
+            <div class="title-area">
+              <h1>React 状态更新与闭包机制</h1>
+              <p>源页面位置: react.dev/docs/hooks-reference</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="util-btn" onclick="toggleRight舱()" title="切换侧边关联扩展舱">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4zM14 4v16"/></svg>
+              </button>
+            </div>
+          </header>
+          
+          <div class="middle-chat-canvas">
+            <div class="bubble-wrap user-side">
+              <div class="bubble">我想知道如何在这个场景下安全地获取到最新的 count 变量？</div>
+            </div>
+            <div class="bubble-wrap ai-side">
+              <div class="bubble">
+                你应该改为向计算函数传入一个回调（Functional Update），这样可以保证拿到的是最新的队列内部状态。示例代码如下：
+                <div class="code-block-wrapper">
+                  <div class="code-header"><span>React JSX</span><span>Copy</span></div>
+                  <div class="code-content">
+                    <span class="code-keyword">const</span> handleIncrement = () => {<br>
+                    &nbsp;&nbsp;setCount(<span class="code-string">prevCount</span> => prevCount + <span class="code-keyword">1</span>);<br>
+                    };
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+        
+        <aside id="context-panel" class="web-right-column">
+          <div class="right-header">
+            <h3>上下文元数据</h3>
+          </div>
+          <div class="right-content">
+            <div class="meta-card">
+              <div class="meta-card-label">首次截取环境</div>
+              <div style="font-weight: 500;">Chrome 124 / macOS</div>
+            </div>
+            <div class="meta-card">
+              <div class="meta-card-label">归属学习标签</div>
+              <div style="color: var(--brand-primary); font-weight: 500;">#前端开发 #React</div>
+            </div>
+          </div>
+        </aside>
+        
+      </div>
+    </div>
+
+    <div id="view-web-summary" class="stage-view">
+      <div class="magazine-scroll-wrapper">
+        <article class="magazine-layout">
+          <header class="mag-masthead">
+            <div>
+              <div class="mag-journal-title">DAILY REVISION</div>
+              <div style="font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 4px;">STUDY COGNITION HUB · MVP</div>
+            </div>
+            <div class="mag-date-stamp">2026年5月19日 / 星期二</div>
+          </header>
+          
+          <section class="mag-editorial">
+            “今日的认知迭代主要聚焦于高级前端状态流转。用户在日常工程实践中遭遇了多次由异步执行序列引起的闭包状态滞后。系统已将相关冲突证据链归档，供后续深度复盘。”
+          </section>
+          
+          <div class="mag-grid-section">
+            <div class="mag-topic-block">
+              <div class="mag-topic-tag">主题领域 01 / React</div>
+              <h2 class="mag-topic-heading">批处理更新与异步生存状态机制</h2>
+              <p class="mag-topic-body">
+                在事件处理上下文中，React 并非实时响应数值改变。今天通过对捕获的代码分析发现，在多次连续更新同一节点时，闭包固化了旧的值域环境，导致条件判断链出现逻辑错位。推荐的应对范式为完全拥抱函数式更新函数或合理安置副作用。
+              </p>
+              
+              <div class="evidence-accordion">
+                <div class="evidence-trigger" onclick="swingAccordion(this)">
+                  <span>🔍 查看关联问答链证据 (Evidence Tree)</span>
+                  <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                </div>
+                <div class="evidence-content">
+                  <div class="evidence-inner-item">
+                    <div class="evidence-mini-capture">
+                      <img src="https://images.unsplash.com/photo-1618477388954-7852f32655ec?q=80&w=100&auto=format&fit=crop" alt="thumb">
+                    </div>
+                    <div class="evidence-qa-flow">
+                      <div class="qa-q">问：为什么 setState 后立刻 console.log 拿不到最新值？</div>
+                      <div class="qa-a">答：状态更新存在批处理，在重渲染发生之前旧值一直被锁在闭包中。</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mag-topic-block">
+              <div class="mag-topic-tag">主题领域 02 / Go 并发</div>
+              <h2 class="mag-topic-heading">无缓冲管道的通信死锁判定</h2>
+              <p class="mag-topic-body">
+                在进行并发协程模型探索时，由于忽略了无缓冲 Channel 必须同时具备发送端与接收端就绪这一刚性特征，导致程序在执行到写入阶段时直接发生永久性阻塞，从而被运行时检测并抛出 panic。
+              </p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // 视图导航路由系统
+    function routeTo(targetStageId, tabBtn) {
+      document.querySelectorAll('.stage-view').forEach(view => view.classList.remove('active'));
+      document.getElementById(targetStageId).classList.add('active');
+      
+      document.querySelectorAll('.deck-tab').forEach(btn => btn.classList.remove('active'));
+      tabBtn.classList.add('active');
+    }
+
+    // 明暗空间调色板动态转换器
+    function mutateTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+    }
+
+    // 网页版右侧扩展舱显隐状态切换
+    function toggleRight舱() {
+      const panel = document.getElementById('context-panel');
+      panel.classList.toggle('collapsed');
+    }
+
+    // 杂志手风琴平滑舒展计算核心
+    function swingAccordion(triggerElement) {
+      triggerElement.classList.toggle('expanded');
+      const container = triggerElement.nextElementSibling;
+      container.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
