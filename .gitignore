@@ -1,6 +1,7 @@
 .env
-/dist
-/node_modules
+dist/
+node_modules/
 *.md
 .claude/
 docker-data/
+!README.md

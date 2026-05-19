@@ -42,6 +42,7 @@ type UploadURLItem struct {
 	UploadRequired bool              `json:"upload_required"`
 	UploadStatus   int8              `json:"upload_status"`
 	Reused         bool              `json:"reused"`
+	SHA256         string            `json:"sha256"`
 }
 
 type ConfirmItem struct {
@@ -94,7 +95,7 @@ func (s *FileService) CreateImageUploadURLs(ctx context.Context, userID uint64, 
 		}
 		items = append(items, UploadURLItem{
 			FileID: file.ID, ObjectKey: objectKey, UploadURL: signed.URL, Method: "PUT", Headers: signed.Headers, ExpiresIn: signed.ExpiresIn,
-			UploadRequired: true, UploadStatus: FileStatusPending, Reused: false,
+			UploadRequired: true, UploadStatus: FileStatusPending, Reused: false, SHA256: in.SHA256,
 		})
 	}
 	return items, nil
@@ -121,7 +122,7 @@ func (s *FileService) reuseImageBySHA256(ctx context.Context, userID uint64, in 
 	if file.UploadStatus == FileStatusUploaded {
 		return UploadURLItem{
 			FileID: file.ID, ObjectKey: file.ObjectKey, Headers: map[string]string{},
-			UploadRequired: false, UploadStatus: file.UploadStatus, Reused: true,
+			UploadRequired: false, UploadStatus: file.UploadStatus, Reused: true, SHA256: file.SHA256,
 		}, true, nil
 	}
 	signed, err := s.storage.SignedPutURL(ctx, file.ObjectKey, file.MimeType, 15*time.Minute)
@@ -130,7 +131,7 @@ func (s *FileService) reuseImageBySHA256(ctx context.Context, userID uint64, in 
 	}
 	return UploadURLItem{
 		FileID: file.ID, ObjectKey: file.ObjectKey, UploadURL: signed.URL, Method: "PUT", Headers: signed.Headers, ExpiresIn: signed.ExpiresIn,
-		UploadRequired: true, UploadStatus: file.UploadStatus, Reused: true,
+		UploadRequired: true, UploadStatus: file.UploadStatus, Reused: true, SHA256: file.SHA256,
 	}, true, nil
 }
 

@@ -1,20 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import webExtension from 'vite-plugin-web-extension'
+import { crx } from '@crxjs/vite-plugin'
+import { resolve } from 'path'
+import manifest from './src/manifest.json'
 
 export default defineConfig({
   plugins: [
     react(),
-    webExtension({
-      manifest: () => './src/manifest.json',
-      browser: 'chrome',
-    }),
+    crx({ manifest }),
   ],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        sidepanel: resolve('./index.html'),
+      },
+    },
   },
-  server: {
-    port: 5173,
+  resolve: {
+    alias: {
+      '@': resolve('./src'),
+    },
   },
 })
