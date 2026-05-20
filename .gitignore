@@ -7,3 +7,4 @@ docker-data/
 !README.md
 .env-remote
 .idea/
+.codex/

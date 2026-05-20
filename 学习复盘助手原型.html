@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AISumly - 学习复盘助手原型</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --subtle: #94a3b8;
+      --line: #dbe4ef;
+      --brand: #2563eb;
+      --brand-weak: #e8f0ff;
+      --green: #059669;
+      --green-weak: #dcfce7;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    button, input, textarea {
+      font: inherit;
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 232px minmax(420px, 1fr) minmax(460px, 560px);
+      background: var(--bg);
+    }
+
+    .sidebar {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 22px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 6px;
+      font-weight: 700;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #facc15;
+      color: #111827;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+    }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-item {
+      border: 0;
+      color: #cbd5e1;
+      background: transparent;
+      text-align: left;
+      padding: 11px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .nav-item.active {
+      background: #233148;
+      color: #ffffff;
+    }
+
+    .side-note {
+      margin-top: auto;
+      border: 1px solid rgba(226, 232, 240, 0.16);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    .assistant {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .topbar {
+      height: 78px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .title-block h1 {
+      font-size: 22px;
+      letter-spacing: 0;
+      margin-bottom: 6px;
+    }
+
+    .title-block p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .date-pill {
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .quick-action {
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      border-radius: var(--radius);
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: 160ms ease;
+    }
+
+    .quick-action:hover {
+      border-color: #b8c7db;
+      background: #eef4ff;
+    }
+
+    .quick-action strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .quick-action span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .msg-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .msg-row.user {
+      justify-content: flex-end;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--brand-weak);
+      color: var(--brand);
+    }
+
+    .bubble {
+      max-width: min(620px, 78%);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .assistant-bubble {
+      background: #f1f5f9;
+      border: 1px solid var(--line);
+      color: #1e293b;
+    }
+
+    .user-bubble {
+      background: var(--brand);
+      color: white;
+      border-radius: 8px 8px 2px 8px;
+    }
+
+    .tool-call {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tool-badge {
+      border: 1px solid #c7d2fe;
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .composer {
+      border-top: 1px solid var(--line);
+      padding: 16px 24px 20px;
+      background: var(--surface);
+    }
+
+    .compose-box {
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .compose-box textarea {
+      width: 100%;
+      height: 72px;
+      resize: none;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    .compose-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .hint {
+      color: var(--subtle);
+      font-size: 12px;
+    }
+
+    .send {
+      border: 0;
+      background: var(--brand);
+      color: white;
+      border-radius: 7px;
+      padding: 8px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .evidence {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: #eef3f9;
+    }
+
+    .evidence-head {
+      min-height: 78px;
+      padding: 18px 22px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .evidence-head h2 {
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .evidence-head p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .result-count {
+      flex: 0 0 auto;
+      align-self: flex-start;
+      background: #0f172a;
+      color: white;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .filters {
+      padding: 14px 22px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    .filter {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: var(--muted);
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .filter.active {
+      border-color: #bfdbfe;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .cards {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 22px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .record-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 14px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .thumb {
+      height: 112px;
+      border-radius: 7px;
+      border: 1px solid #d6e0ec;
+      overflow: hidden;
+      background: #e5ecf5;
+      position: relative;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .thumb.fallback {
+      background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(15, 23, 42, 0.04)),
+        #e7edf5;
+      display: grid;
+      place-items: center;
+      color: #334155;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .thumb-label {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.76);
+      color: white;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .record-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .record-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--subtle);
+      font-size: 12px;
+    }
+
+    .conversation-title {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .question {
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .answer {
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.58;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: auto;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .badge.favorite {
+      color: #854d0e;
+      background: #fef9c3;
+      border-color: #fde68a;
+    }
+
+    .badge.understood {
+      color: var(--green);
+      background: var(--green-weak);
+      border-color: #bbf7d0;
+    }
+
+    .badge.review {
+      color: var(--amber);
+      background: var(--amber-weak);
+      border-color: #fde68a;
+    }
+
+    .badge.unresolved {
+      color: var(--rose);
+      background: var(--rose-weak);
+      border-color: #fecdd3;
+    }
+
+    .open-link {
+      margin-left: auto;
+      border: 0;
+      background: transparent;
+      color: var(--brand);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1120px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .assistant, .evidence {
+        min-height: 720px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .record-card {
+        grid-template-columns: 1fr;
+      }
+
+      .thumb {
+        height: 150px;
+      }
+
+      .quick-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <span>截图学习助手</span>
+      </div>
+      <nav class="nav">
+        <button class="nav-item">首页</button>
+        <button class="nav-item">会话</button>
+        <button class="nav-item">历史</button>
+        <button class="nav-item">每日总结</button>
+        <button class="nav-item active">学习复盘助手</button>
+        <button class="nav-item">设置</button>
+      </nav>
+      <div class="side-note">
+        今天有 3 条待复习记录、2 条收藏记录。复盘助手可以基于这些记录生成解释、复习清单和练习题。
+      </div>
+    </aside>
+
+    <main class="assistant">
+      <header class="topbar">
+        <div class="title-block">
+          <h1>学习复盘助手</h1>
+          <p>用自然语言查询你的学习记录，并基于收藏、已理解、待复习状态生成复盘回答。</p>
+        </div>
+        <div class="date-pill">2026 年 5 月 20 日</div>
+      </header>
+
+      <section class="chat">
+        <div class="quick-actions">
+          <button class="quick-action">
+            <strong>今天哪些内容还没弄懂？</strong>
+            <span>查询未标记已理解和待复习的 AI 回复。</span>
+          </button>
+          <button class="quick-action">
+            <strong>根据薄弱点出题</strong>
+            <span>先找出待复习记录，再生成练习题。</span>
+          </button>
+          <button class="quick-action">
+            <strong>我收藏了哪些问答？</strong>
+            <span>展示今天被收藏的高价值回答。</span>
+          </button>
+          <button class="quick-action">
+            <strong>整理今天复习清单</strong>
+            <span>按会话主题汇总建议复习顺序。</span>
+          </button>
+        </div>
+
+        <div class="msg-row user">
+          <div class="bubble user-bubble">我今天还有哪些知识点没有弄懂？顺便根据这些薄弱点出几道题给我。</div>
+        </div>
+
+        <div class="msg-row">
+          <div class="avatar">AI</div>
+          <div class="bubble assistant-bubble">
+            我查到了 4 条和“未理解 / 待复习”相关的记录，主要集中在 React 状态更新、Go channel 阻塞和 Eino 流式响应三类问题。右侧已经列出原始问答卡片，你可以直接跳回当时的会话。
+            <br><br>
+            我建议先复习 React 的 setState 批处理机制，再处理 Go channel 的同步边界。下面给你 3 道练习题：
+            <br>
+            1. 为什么 setState 后立刻读取变量可能还是旧值？<br>
+            2. 无缓冲 channel 在什么情况下会阻塞？<br>
+            3. Eino Stream 返回的 chunk 为什么需要后端转换成 SSE delta？
+            <div class="tool-call">
+              <span class="tool-badge">QueryReviewLaterMessages</span>
+              <span class="tool-badge">QueryUnunderstoodMessages</span>
+              <span class="tool-badge">GenerateQuizFromWeakPoints</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="composer">
+        <div class="compose-box">
+          <textarea placeholder="例如：帮我整理今天待复习的问题，并按难度排序..."></textarea>
+          <div class="compose-actions">
+            <span class="hint">Enter 发送，Shift + Enter 换行</span>
+            <button class="send">发送</button>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <aside class="evidence">
+      <header class="evidence-head">
+        <div>
+          <h2>本次查询到的问答记录</h2>
+          <p>来自复盘助手调用 tool 后返回的 message 卡片，可点击回到原始会话。</p>
+        </div>
+        <div class="result-count">4 条</div>
+      </header>
+
+      <div class="filters">
+        <button class="filter active">全部</button>
+        <button class="filter">待复习</button>
+        <button class="filter">未理解</button>
+        <button class="filter">已收藏</button>
+        <button class="filter">有截图</button>
+      </div>
+
+      <section class="cards">
+        <article class="record-card">
+          <div class="thumb">
+            <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=420&auto=format&fit=crop" alt="代码截图缩略图">
+            <span class="thumb-label">file_id: 38</span>
+          </div>
+          <div class="record-main">
+            <div class="record-meta">
+              <span class="conversation-title">React 状态更新机制</span>
+              <time>今天 10:24</time>
+            </div>
+            <h3 class="question">为什么 setState 后马上 console.log 还是旧值？</h3>
+            <p class="answer">AI 解释了 React 状态更新的调度机制：当前闭包里的 count 不会在本轮渲染内改变，setCount 会触发下一次渲染。建议用函数式更新避免依赖旧值。</p>
+            <div class="badges">
+              <span class="badge favorite">已收藏</span>
+              <span class="badge review">待复习</span>
+              <span class="badge unresolved">未标记已理解</span>
+              <button class="open-link">打开会话</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="record-card">
+          <div class="thumb fallback">
+            无截图记录
+          </div>
+          <div class="record-main">
+            <div class="record-meta">
+              <span class="conversation-title">Go channel 阻塞与同步</span>
+              <time>今天 13:08</time>
+            </div>
+            <h3 class="question">channel 无缓冲和有缓冲的阻塞边界还是不清楚</h3>
+            <p class="answer">AI 对比了无缓冲 channel 需要发送方和接收方同时就绪，而有缓冲 channel 在缓冲区未满时可以暂存数据。当前问题建议结合小代码实验复习。</p>
+            <div class="badges">
+              <span class="badge review">待复习</span>
+              <span class="badge unresolved">未标记已理解</span>
+              <button class="open-link">打开会话</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="record-card">
+          <div class="thumb">
+            <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=420&auto=format&fit=crop" alt="接口截图缩略图">
+            <span class="thumb-label">file_id: 41</span>
+          </div>
+          <div class="record-main">
+            <div class="record-meta">
+              <span class="conversation-title">Eino 流式响应设计</span>
+              <time>今天 15:42</time>
+            </div>
+            <h3 class="question">Eino Stream 的 chunk 怎么转换成前端 SSE delta？</h3>
+            <p class="answer">AI 说明了后端可以读取 schema.StreamReader 中的消息片段，将每段文本包装为 SSE event，再由前端逐步追加到当前 assistant 消息中。</p>
+            <div class="badges">
+              <span class="badge favorite">已收藏</span>
+              <span class="badge understood">已理解</span>
+              <button class="open-link">打开会话</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="record-card">
+          <div class="thumb fallback">
+            无截图记录
+          </div>
+          <div class="record-main">
+            <div class="record-meta">
+              <span class="conversation-title">每日总结工作流</span>
+              <time>今天 16:17</time>
+            </div>
+            <h3 class="question">每日总结中消息很多时，是否应该先做会话级摘要？</h3>
+            <p class="answer">AI 建议把会话视为用户主动划分的主题边界，先生成会话级摘要，再聚合为每日总结；用户标记的收藏、待复习、已理解状态应作为高价值信号。</p>
+            <div class="badges">
+              <span class="badge review">待复习</span>
+              <span class="badge understood">已理解</span>
+              <button class="open-link">打开会话</button>
+            </div>
+          </div>
+        </article>
+      </section>
+    </aside>
+  </div>
+</body>
+</html>
