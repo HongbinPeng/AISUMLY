@@ -5,3 +5,5 @@ node_modules/
 .claude/
 docker-data/
 !README.md
+.env-remote
+.idea/

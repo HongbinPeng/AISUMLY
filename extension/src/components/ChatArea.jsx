@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react'
 import { useAtomValue } from 'jotai'
 import MessageBubble from './MessageBubble'
 import InputBar from './InputBar'
-import { messagesAtom, streamingAtom, streamErrorAtom } from '../store/chat'
+import { activeConversationStreamingAtom, messagesAtom, streamErrorAtom } from '../store/chat'
 import { isTempConversationAtom } from '../store/conversation'
 
 export default function ChatArea({ conversation, previewURLs }) {
   const messages = useAtomValue(messagesAtom)
-  const streaming = useAtomValue(streamingAtom)
+  const streaming = useAtomValue(activeConversationStreamingAtom)
   const streamError = useAtomValue(streamErrorAtom)
   const isTemp = useAtomValue(isTempConversationAtom)
   const messagesEndRef = useRef(null)

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { conversationsAtom, activeConversationIdAtom, isTempConversationAtom } from '../store/conversation'
-import { messagesAtom, pendingImagesAtom, uploadedFileIdsAtom, streamingAtom } from '../store/chat'
-import { listConversations, getConversationMessages } from '../api/index.js'
+import { activeConversationStreamingAtom, messagesAtom, pendingImagesAtom, updateConversationMessagesAtom, updateConversationPendingImagesAtom, uploadedFileIdsAtom } from '../store/chat'
+import { listConversations, getConversationMessages, logout as logoutAPI } from '../api/index.js'
 import { doLogout } from '../store/auth.js'
 
 export default function Sidebar({ setAccessToken, setRefreshToken, setUser }) {
@@ -11,8 +11,10 @@ export default function Sidebar({ setAccessToken, setRefreshToken, setUser }) {
   const isTemp = useAtomValue(isTempConversationAtom)
   const setMessages = useSetAtom(messagesAtom)
   const setPendingImages = useSetAtom(pendingImagesAtom)
+  const updateConversationMessages = useSetAtom(updateConversationMessagesAtom)
+  const updateConversationPendingImages = useSetAtom(updateConversationPendingImagesAtom)
   const setUploadedFileIds = useSetAtom(uploadedFileIdsAtom)
-  const streaming = useAtomValue(streamingAtom)
+  const activeIsStreaming = useAtomValue(activeConversationStreamingAtom)
 
   // Collapse state, persisted to localStorage
   const [collapsed, setCollapsed] = useState(() => {
@@ -33,41 +35,43 @@ export default function Sidebar({ setAccessToken, setRefreshToken, setUser }) {
   }, [])
 
   async function selectConversation(id) {
-    if (streaming) return
     if (id === activeId) return
 
     setActiveId(id)
-    setMessages([])
-    setPendingImages([])
     setUploadedFileIds([])
 
     if (typeof id === 'string' && id.startsWith('temp_')) return
 
     try {
       const data = await getConversationMessages(id, 50, 0)
-      setMessages(data.messages || [])
+      updateConversationMessages({ conversationId: id, updater: data.messages || [] })
     } catch (err) {
       console.error('加载消息失败:', err)
     }
   }
 
   function createTempConversation() {
-    if (streaming) return
     const tempId = `temp_${Date.now()}`
+    updateConversationMessages({ conversationId: tempId, updater: [] })
+    updateConversationPendingImages({ conversationId: tempId, updater: [] })
     setActiveId(tempId)
-    setMessages([])
-    setPendingImages([])
     setUploadedFileIds([])
   }
 
   function clearContext() {
-    if (streaming) return
+    if (activeIsStreaming) return
     setMessages([])
     setPendingImages([])
     setUploadedFileIds([])
   }
 
   async function handleLogout() {
+    // Read refresh_token then call backend to invalidate it
+    try {
+      const data = await chrome.storage.local.get(['refresh_token'])
+      if (data.refresh_token) await logoutAPI(data.refresh_token)
+    } catch { /* ignore logout API failure */ }
+
     await doLogout()
     setAccessToken('')
     setRefreshToken('')

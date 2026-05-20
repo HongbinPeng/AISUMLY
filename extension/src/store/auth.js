@@ -70,6 +70,15 @@ export async function doRegister(email, password, nickname) {
 }
 
 export async function doLogout() {
+  const { refreshToken } = await chrome.storage.local.get(['refresh_token'])
+  if (refreshToken) {
+    try {
+      const { logout } = await import('../api/index.js')
+      await logout(refreshToken)
+    } catch {
+      // 后端不可用时仍清理本地状态
+    }
+  }
   await chrome.storage.local.remove(['access_token', 'refresh_token', 'user_info'])
   window.dispatchEvent(new CustomEvent('auth:logout'))
 }

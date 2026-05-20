@@ -3,24 +3,46 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { useSSE } from '../hooks/useSSE'
 import { useImageUpload } from '../hooks/useImageUpload'
 import ImagePreview from './ImagePreview'
-import { messagesAtom, streamingAtom, streamErrorAtom, pendingImagesAtom, uploadedFileIdsAtom } from '../store/chat'
+import {
+  activeConversationStreamingAtom,
+  activeStreamingConvIdAtom,
+  inputTextAtom,
+  moveConversationMessagesAtom,
+  pendingImagesAtom,
+  setConversationInputTextAtom,
+  setConversationStreamErrorAtom,
+  setConversationStreamingAtom,
+  updateConversationMessagesAtom,
+  updateConversationPendingImagesAtom,
+} from '../store/chat'
 import { activeConversationIdAtom, isTempConversationAtom, conversationsAtom } from '../store/conversation'
-import { listConversations, getConversationMessages, getPreviewURL } from '../api/index.js'
+import { listConversations } from '../api/index.js'
 
 export default function InputBar() {
-  const [text, setText] = useState('')
+  const [text, setText] = useAtom(inputTextAtom)
   const [error, setError] = useState('')
   const [pendingImages, setPendingImages] = useAtom(pendingImagesAtom)
-  const [streaming, setStreaming] = useAtom(streamingAtom)
-  const setStreamError = useSetAtom(streamErrorAtom)
-  const setMessages = useSetAtom(messagesAtom)
-  const activeId = useAtomValue(activeConversationIdAtom)
+  const activeIsStreaming = useAtomValue(activeConversationStreamingAtom)
+  const [activeId, setActiveId] = useAtom(activeConversationIdAtom)
   const isTemp = useAtomValue(isTempConversationAtom)
   const setConversations = useSetAtom(conversationsAtom)
+  const setActiveStreamingConvId = useSetAtom(activeStreamingConvIdAtom)
+  const setConversationStreaming = useSetAtom(setConversationStreamingAtom)
+  const setConversationInputText = useSetAtom(setConversationInputTextAtom)
+  const setConversationStreamError = useSetAtom(setConversationStreamErrorAtom)
+  const updateConversationMessages = useSetAtom(updateConversationMessagesAtom)
+  const moveConversationMessages = useSetAtom(moveConversationMessagesAtom)
+  const updateConversationPendingImages = useSetAtom(updateConversationPendingImagesAtom)
   const textareaRef = useRef(null)
   const fileInputRef = useRef(null)
   const { startStream } = useSSE()
   const { uploadImages } = useImageUpload()
+
+  // 当前激活会话引用，避免异步回调清空用户已经切换到的新会话输入。
+  const activeIdRef = useRef(activeId)
+  useEffect(() => {
+    activeIdRef.current = activeId
+  }, [activeId])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -74,7 +96,6 @@ export default function InputBar() {
       })
     }
     setPendingImages(prev => [...prev, ...newImages])
-    // Clear file input
     if (fileInputRef.current) fileInputRef.current.value = ''
   }, [setPendingImages])
 
@@ -90,20 +111,41 @@ export default function InputBar() {
   const handleSend = useCallback(async () => {
     const trimmed = text.trim()
     if (!trimmed && pendingImages.length === 0) return
-    if (streaming) return
+    if (activeIsStreaming) return
 
     setError('')
-    setStreamError(null)
-    setStreaming(true)
+
+    // 先确定本次请求所属会话。后续即使用户切换会话，所有回调也只更新这个会话。
+    let conversationID = null
+    let clientConversationID = null
+    let createConversation = false
+
+    if (isTemp) {
+      clientConversationID = activeId
+      createConversation = true
+    } else if (!activeId) {
+      clientConversationID = `temp_${Date.now()}`
+      createConversation = true
+    } else {
+      conversationID = activeId
+    }
+
+    let conversationKey = conversationID || clientConversationID
+    if (!conversationKey) return
+
+    // 每次发送都拥有独立的流式会话 key，允许多个会话同时生成。
+    let streamConversationKey = conversationKey
+    setConversationStreamError({ conversationId: conversationKey, error: null })
+    setConversationStreaming({ conversationId: conversationKey, streaming: true })
+    setActiveStreamingConvId(conversationKey)
 
     try {
       let fileIDs = []
+      const localPendingImages = pendingImages
 
-      // Upload images if any
-      if (pendingImages.length > 0) {
-        // Deduplicate by SHA256
+      if (localPendingImages.length > 0) {
         const shaMap = new Map()
-        for (const img of pendingImages) {
+        for (const img of localPendingImages) {
           const sha = await computeSHA256(img.blob)
           if (!shaMap.has(sha)) {
             shaMap.set(sha, { ...img, sha256: sha })
@@ -111,28 +153,12 @@ export default function InputBar() {
         }
         const uniqueImages = Array.from(shaMap.values())
 
-        // Upload
         fileIDs = await uploadImages(uniqueImages)
 
-        // Clean up blob URLs
-        pendingImages.forEach(img => URL.revokeObjectURL(img.url))
-        setPendingImages([])
+        localPendingImages.forEach(img => URL.revokeObjectURL(img.url))
+        updateConversationPendingImages({ conversationId: conversationKey, updater: [] })
       }
 
-      // Determine conversation ID
-      let conversationID = activeId
-      let clientConversationID = null
-      let createConversation = false
-
-      if (isTemp) {
-        clientConversationID = activeId
-        createConversation = true
-      } else if (!activeId) {
-        clientConversationID = `temp_${Date.now()}`
-        createConversation = true
-      }
-
-      // Get current page info
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
       const currentTab = tabs[0]
       const sourceURL = currentTab?.url || ''
@@ -140,7 +166,6 @@ export default function InputBar() {
 
       const clientRequestID = crypto.randomUUID()
 
-      // Start SSE stream
       const requestBody = {
         client_request_id: clientRequestID,
         conversation_id: conversationID || undefined,
@@ -159,7 +184,7 @@ export default function InputBar() {
         role: 'user',
         content: trimmed || '[图片]',
         turn_no: 0,
-        attachments: pendingImages.map((img, i) => ({
+        attachments: localPendingImages.map((img, i) => ({
           attachment_type: 'image',
           preview_url: img.url,
           file_id: fileIDs[i],
@@ -167,7 +192,7 @@ export default function InputBar() {
         source_url: sourceURL,
         source_title: sourceTitle,
       }
-      setMessages(prev => [...prev, userMsg])
+      updateConversationMessages({ conversationId: conversationKey, updater: prev => [...prev, userMsg] })
 
       // Add assistant placeholder
       const assistantMsg = {
@@ -176,36 +201,43 @@ export default function InputBar() {
         content: '',
         turn_no: 0,
       }
-      setMessages(prev => [...prev, assistantMsg])
+      updateConversationMessages({ conversationId: conversationKey, updater: prev => [...prev, assistantMsg] })
+      setConversationInputText({ conversationId: conversationKey, text: '' })
 
       let fullContent = ''
 
       await startStream(requestBody, {
         onEvent(event, data) {
-          if (event === 'delta' && data?.content) {
-            fullContent += data.content
-            setMessages(prev => {
-              const next = [...prev]
-              const lastIdx = next.length - 1
-              if (next[lastIdx]?.role === 'assistant') {
-                next[lastIdx] = { ...next[lastIdx], content: fullContent }
-              }
-              return next
+          if (event === 'conversation_created' && data?.conversation_id) {
+            const realId = data.conversation_id
+            const oldKey = streamConversationKey
+            streamConversationKey = realId
+            conversationKey = realId
+            moveConversationMessages({ from: oldKey, to: realId })
+            setConversationStreaming({ conversationId: oldKey, streaming: false })
+            setConversationStreaming({ conversationId: realId, streaming: true })
+            setConversationStreamError({ conversationId: oldKey, error: null })
+            setActiveStreamingConvId(realId)
+            setConversations(prev => {
+              if (prev.some(conv => conv.id === realId)) return prev
+              return [{
+                id: realId,
+                title: data.title || '新会话',
+                message_count: 0,
+                last_active_at: new Date().toISOString(),
+              }, ...prev]
+            })
+            if (activeIdRef.current === oldKey) {
+              setActiveId(realId)
+            }
+            updateConversationMessages({
+              conversationId: realId,
+              updater: prev => prev.map(m => ({ ...m, conversation_id: realId })),
             })
           }
-          if (event === 'conversation_created' && data?.conversation_id) {
-            // Update temp conversation to real ID
-            const realId = data.conversation_id
-            setMessages(prev => prev.map(m => ({
-              ...m,
-              conversation_id: realId,
-            })))
-          }
           if (event === 'user_message_created' && data?.message_id) {
-            // Update user message with real ID and attachments
-            setMessages(prev => {
+            updateConversationMessages({ conversationId: streamConversationKey, updater: prev => {
               const next = [...prev]
-              // Find the last user message
               for (let i = next.length - 1; i >= 0; i--) {
                 if (next[i].role === 'user' && !next[i].id) {
                   next[i] = {
@@ -213,16 +245,16 @@ export default function InputBar() {
                     id: data.message_id,
                     turn_no: data.turn_no,
                     attachments: data.attachments || next[i].attachments,
+                    conversation_id: data.conversation_id,
                   }
                   break
                 }
               }
               return next
-            })
+            }})
           }
           if (event === 'assistant_message_created' && data?.message_id) {
-            // Update assistant message with real ID
-            setMessages(prev => {
+            updateConversationMessages({ conversationId: streamConversationKey, updater: prev => {
               const next = [...prev]
               const lastIdx = next.length - 1
               if (next[lastIdx]?.role === 'assistant' && !next[lastIdx].id) {
@@ -230,31 +262,52 @@ export default function InputBar() {
                   ...next[lastIdx],
                   id: data.message_id,
                   turn_no: data.turn_no,
+                  conversation_id: data.conversation_id,
                 }
               }
               return next
-            })
+            }})
+          }
+          if (event === 'delta' && data?.content) {
+            fullContent += data.content
+            updateConversationMessages({ conversationId: streamConversationKey, updater: prev => {
+              const next = [...prev]
+              const lastIdx = next.length - 1
+              if (next[lastIdx]?.role === 'assistant') {
+                next[lastIdx] = { ...next[lastIdx], content: fullContent }
+              }
+              return next
+            }})
           }
         },
-        onComplete(data) {
-          setStreaming(false)
-          // Refresh conversation list
+        onComplete() {
+          const finishedKey = streamConversationKey
+          setConversationStreaming({ conversationId: finishedKey, streaming: false })
+          setActiveStreamingConvId(null)
           listConversations().then(data => setConversations(data.items || [])).catch(() => {})
-          // Clear text
-          setText('')
+          setConversationInputText({ conversationId: finishedKey, text: '' })
         },
         onError(data) {
-          setStreaming(false)
-          setStreamError({ code: data?.code, message: data?.message || 'AI 回答出错' })
+          const failedKey = streamConversationKey
+          setConversationStreaming({ conversationId: failedKey, streaming: false })
+          setActiveStreamingConvId(null)
+          setConversationStreamError({
+            conversationId: failedKey,
+            error: { code: data?.code, message: data?.message || 'AI 回答出错' },
+          })
         },
       })
 
     } catch (err) {
       console.error('发送失败:', err)
       setError(err.message || '发送失败，请重试')
-      setStreaming(false)
+      setConversationStreaming({ conversationId: conversationKey, streaming: false })
+      setActiveStreamingConvId(null)
     }
-  }, [text, pendingImages, streaming, activeId, isTemp, startStream, uploadImages, setMessages, setStreaming, setStreamError, setConversations, setPendingImages])
+  }, [text, pendingImages, activeIsStreaming, activeId, isTemp, startStream, uploadImages, setConversations, setActiveStreamingConvId, setConversationStreaming, setConversationInputText, setConversationStreamError, updateConversationMessages, moveConversationMessages, updateConversationPendingImages, setActiveId])
+
+  // 只在当前会话生成中时禁用发送，其他会话可以继续输入和发起新请求。
+  const isSendDisabled = activeIsStreaming || (!text.trim() && pendingImages.length === 0)
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -265,17 +318,14 @@ export default function InputBar() {
 
   return (
     <div className="input-bar">
-      {/* Pending image previews */}
       <ImagePreview images={pendingImages} onRemove={removeImage} />
 
-      {/* Error */}
       {error && <div className="error-banner">{error}</div>}
 
-      {/* Input row */}
       <div className="input-row">
         <div className="input-actions">
-          <button className="btn-paste-image" onClick={() => fileInputRef.current?.click()}>
-            📎 图片
+          <button className="btn-paste-image" onClick={() => fileInputRef.current?.click()} title="插入图片">
+            <img src="/icons/插入链接.png" alt="图片" width="18" height="18" />
           </button>
           <input
             ref={fileInputRef}
@@ -294,12 +344,11 @@ export default function InputBar() {
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           rows={1}
-          disabled={streaming}
         />
         <button
           className="btn-send"
           onClick={handleSend}
-          disabled={streaming || (!text.trim() && pendingImages.length === 0)}
+          disabled={isSendDisabled}
           title="发送"
         >
           ↑

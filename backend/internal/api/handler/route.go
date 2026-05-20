@@ -20,6 +20,7 @@ func (h *Handler) RegisterProtected(r *gin.RouterGroup) {
 	conversations.GET("", h.listConversations)
 	conversations.GET("/:id/messages", h.conversationMessages)
 	conversations.PATCH("/:id", h.updateConversation)
+	conversations.DELETE("/:id", h.deleteConversation)
 
 	files := r.Group("/files")
 	files.POST("/images/upload-urls", h.createImageUploadURLs)

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"aisumly/backend/internal/domain/model"
-	"aisumly/backend/internal/infra/oss"
+	storage "aisumly/backend/internal/infra/oss"
 
 	"gorm.io/gorm"
 )
@@ -131,4 +131,7 @@ func (s *ConversationService) previewURL(ctx context.Context, objectKey string) 
 		return ""
 	}
 	return u.URL
+}
+func (s *ConversationService) Delete(ctx context.Context, userID, conversationID uint64) error {
+	return s.db.WithContext(ctx).Where("id = ? AND user_id = ? AND deleted_at IS NULL", conversationID, userID).Delete(&model.Conversation{}).Error
 }

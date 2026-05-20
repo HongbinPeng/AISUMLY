@@ -1,11 +1,14 @@
+import { useAtomValue } from 'jotai'
 import MarkdownRender from './MarkdownRender'
 import MessageStatusEditor from './MessageStatusEditor'
+import { activeConversationStreamingAtom } from '../store/chat'
 
 export default function MessageBubble({ message, previewURLs }) {
   if (!message) return null
 
   const isUser = message.role === 'user'
   const time = message.created_at ? formatTime(message.created_at) : ''
+  const streaming = useAtomValue(activeConversationStreamingAtom)
 
   // Get image preview URLs for this message
   const attachments = message.attachments || []
@@ -15,6 +18,9 @@ export default function MessageBubble({ message, previewURLs }) {
       file_id: a.file_id,
       url: a.preview_url || previewURLs?.[a.file_id] || '',
     }))
+
+  // Show loading dots for assistant message with empty content during streaming
+  const isStreamingAssistant = !isUser && !message.content && streaming
 
   return (
     <div className={`message-bubble ${message.role}`}>
@@ -35,6 +41,15 @@ export default function MessageBubble({ message, previewURLs }) {
                 />
               ) : null
             ))}
+          </div>
+        )}
+
+        {/* Loading dots while waiting for first token */}
+        {isStreamingAssistant && (
+          <div className="bubble-text">
+            <div className="loading-dots">
+              <span></span><span></span><span></span>
+            </div>
           </div>
         )}
 

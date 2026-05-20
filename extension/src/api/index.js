@@ -4,7 +4,7 @@ const API_BASE = 'http://127.0.0.1:8080/api/v1'
 
 async function getTokens() {
   const data = await chrome.storage.local.get(['access_token', 'refresh_token'])
-  return { accessToken: data.access_token || '', refreshToken: data.refreshToken || '' }
+  return { accessToken: data.access_token || '', refreshToken: data.refresh_token || '' }
 }
 
 async function setTokens({ access_token, refresh_token }) {
@@ -63,7 +63,7 @@ async function doRefresh() {
 
 // --- Generic fetch with auth + auto-refresh ---
 
-async function fetchJSON(url, options = {}) {
+async function fetchJSON(url, options = {}, { noRefresh = false } = {}) {
   const { accessToken } = await getTokens()
   const headers = { 'Content-Type': 'application/json', ...options.headers }
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
@@ -73,8 +73,8 @@ async function fetchJSON(url, options = {}) {
     headers,
   })
 
-  // 401 自动刷新重试（仅重试一次）
-  if (res.status === 401) {
+  // 401 自动刷新重试（仅重试一次，登录/注册等不需要认证的接口跳过）
+  if (res.status === 401 && !noRefresh) {
     try {
       const newToken = await doRefresh()
       headers['Authorization'] = `Bearer ${newToken}`
@@ -101,14 +101,14 @@ export async function login(email, password) {
   return fetchJSON('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
-  })
+  }, { noRefresh: true })
 }
 
 export async function register(email, password, nickname) {
   return fetchJSON('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ email, password, nickname }),
-  })
+  }, { noRefresh: true })
 }
 
 export async function refreshTokenAPI(refreshToken) {
@@ -120,6 +120,13 @@ export async function refreshTokenAPI(refreshToken) {
 
 export async function getMe() {
   return fetchJSON('/auth/me')
+}
+
+export async function logout(refreshToken) {
+  return fetchJSON('/auth/logout', {
+    method: 'POST',
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  }, { noRefresh: true })
 }
 
 // --- Conversations ---

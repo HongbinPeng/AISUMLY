@@ -61,3 +61,16 @@ func (h *Handler) updateConversation(c *gin.Context) {
 	}
 	response.OK(c, conv)
 }
+func (h *Handler) deleteConversation(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, 40000, "会话 ID 不正确")
+		return
+	}
+	err = h.deps.Conversations.Delete(c.Request.Context(), middleware.CurrentUserID(c), id)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, 40000, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}

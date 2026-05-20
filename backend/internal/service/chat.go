@@ -158,7 +158,7 @@ func (s *ChatService) runStream(ctx context.Context, req StreamRequest, idemKey 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 没有传入 conversation_id 则自动创建新会话（首次对话场景）。
 		if req.ConversationID == 0 {
-			conversation = model.Conversation{UserID: req.UserID, Title: "新会话", Status: ConversationNormal, LastActiveAt: time.Now()}
+			conversation = model.Conversation{UserID: req.UserID, Title: firstConversationTitle(req.SourceTitle), Status: ConversationNormal, LastActiveAt: time.Now()}
 			if err := tx.Create(&conversation).Error; err != nil {
 				return err
 			}
@@ -242,7 +242,8 @@ func (s *ChatService) runStream(ctx context.Context, req StreamRequest, idemKey 
 			_ = s.rdb.Del(context.Background(), lockKey).Err()
 		}
 		events <- StreamEvent{Event: "error", Data: map[string]interface{}{"code": 50000, "message": err.Error()}}
-		_ = s.rdb.Set(context.Background(), idemKey, `{"status":"failed"}`, s.cfg.Security.IdempotencyTTL).Err()
+		_ = s.rdb.Del(context.Background(), idemKey).Err() // 事务失败，删除幂等状态，允许前端重试
+		// _ = s.rdb.Set(context.Background(), idemKey, `{"status":"failed"}`, s.cfg.Security.IdempotencyTTL).Err()
 		return
 	}
 	// 正常退出时释放会话锁（defer 保证即使下面 panic 也会执行）。
@@ -317,6 +318,19 @@ func isSupportedImage(mimeType string) bool {
 	default:
 		return false
 	}
+}
+
+// firstConversationTitle 根据第一次提问所在网页标题生成会话标题，缺失时使用默认标题。
+func firstConversationTitle(sourceTitle string) string {
+	title := strings.TrimSpace(sourceTitle)
+	if title == "" {
+		return "新会话"
+	}
+	runes := []rune(title)
+	if len(runes) > 80 {
+		return string(runes[:80])
+	}
+	return title
 }
 
 // validateFiles 校验 file_ids 都属于当前用户且已上传完成，并按请求顺序返回文件列表。
