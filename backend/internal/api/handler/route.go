@@ -16,6 +16,9 @@ func (h *Handler) RegisterProtected(r *gin.RouterGroup) {
 	auth.GET("/me", h.me)
 	auth.POST("/logout", h.logout)
 
+	dashboard := r.Group("/dashboard")
+	dashboard.GET("/today", h.todayDashboard)
+
 	conversations := r.Group("/conversations")
 	conversations.GET("", h.listConversations)
 	conversations.GET("/:id/messages", h.conversationMessages)
@@ -37,4 +40,8 @@ func (h *Handler) RegisterProtected(r *gin.RouterGroup) {
 	summaries.POST("/daily/:date/generate", h.generateDailySummary)
 	summaries.GET("/daily/:date", h.getDailySummary)
 	summaries.POST("/daily/:date/regenerate", h.regenerateDailySummary)
+
+	reviewAgent := r.Group("/review-agent")
+	reviewAgent.GET("/messages", h.reviewAgentMessages)
+	reviewAgent.POST("/chat", h.reviewAgentChat)
 }

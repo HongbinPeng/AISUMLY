@@ -142,3 +142,21 @@ type DailySummaryItem struct {
 }
 
 func (DailySummaryItem) TableName() string { return "daily_summary_items" }
+
+type ReviewAgentMessage struct {
+	ID            uint64     `gorm:"primaryKey;column:id" json:"id"`
+	UserID        uint64     `gorm:"column:user_id" json:"user_id"`
+	TurnNo        uint       `gorm:"column:turn_no" json:"turn_no"`
+	Role          string     `gorm:"column:role" json:"role"`
+	MessageType   string     `gorm:"column:message_type" json:"message_type"`
+	Content       string     `gorm:"column:content" json:"content"`
+	ContentFormat string     `gorm:"column:content_format" json:"content_format"`
+	SequenceNo    uint64     `gorm:"column:sequence_no" json:"sequence_no"`
+	Status        int8       `gorm:"column:status" json:"status"`
+	ErrorMessage  string     `gorm:"column:error_message" json:"error_message"`
+	CreatedAt     time.Time  `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt     time.Time  `gorm:"column:updated_at" json:"updated_at"`
+	DeletedAt     *time.Time `gorm:"column:deleted_at" json:"-"`
+}
+
+func (ReviewAgentMessage) TableName() string { return "review_agent_messages" }

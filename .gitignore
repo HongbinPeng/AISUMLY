@@ -8,3 +8,4 @@ docker-data/
 .env-remote
 .idea/
 .codex/
+.env.production.example

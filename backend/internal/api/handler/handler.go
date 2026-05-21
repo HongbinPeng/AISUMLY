@@ -9,6 +9,8 @@ type Dependencies struct {
 	Files         *service.FileService
 	Messages      *service.MessageService
 	Summaries     *service.SummaryService
+	ReviewAgent   *service.ReviewAgentService
+	Dashboard     *service.DashboardService
 }
 
 type Handler struct {

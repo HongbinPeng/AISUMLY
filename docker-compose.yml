@@ -23,6 +23,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - aisumly
 
   redis:
     image: redis:7.4
@@ -38,6 +40,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - aisumly
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -57,3 +61,40 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - aisumly
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aisumly-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.production
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8080"
+    networks:
+      - aisumly
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aisumly-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - aisumly
+
+networks:
+  aisumly:
+    driver: bridge

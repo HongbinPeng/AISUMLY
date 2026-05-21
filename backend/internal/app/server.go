@@ -47,6 +47,8 @@ func NewServer(cfg config.Config) (*Server, error) {
 	fileSvc := service.NewFileService(db, store)
 	messageSvc := service.NewMessageService(db)
 	summarySvc := service.NewSummaryService(db, rdb, chatModel)
+	reviewAgentSvc := service.NewReviewAgentService(db, rdb, store, chatModel)
+	dashboardSvc := service.NewDashboardService(db)
 
 	h := handler.New(handler.Dependencies{
 		Auth:          authSvc,
@@ -55,6 +57,8 @@ func NewServer(cfg config.Config) (*Server, error) {
 		Files:         fileSvc,
 		Messages:      messageSvc,
 		Summaries:     summarySvc,
+		ReviewAgent:   reviewAgentSvc,
+		Dashboard:     dashboardSvc,
 	})
 
 	r := gin.New()

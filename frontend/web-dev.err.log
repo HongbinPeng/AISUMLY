@@ -1,0 +1,3 @@
+[2m17:57:14[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/review-agent/chat[39m
+Error: connect ECONNREFUSED 127.0.0.1:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1634:16)

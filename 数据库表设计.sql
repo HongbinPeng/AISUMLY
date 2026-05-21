@@ -8,6 +8,8 @@
 -- 4. 一条消息可以绑定多张图片，图片元数据存 files，消息与图片关系存 message_attachments。
 -- 5. 短时记忆由最近 N 轮 messages 动态拼接；长时记忆/会话摘要存 conversation_memories。
 -- 6. 每日总结由模型返回 evidence_ids，后端再映射为真实 conversation/message/file 关联。
+-- 7. 首页“今天的学习记录”不新增独立表，聚合读取 conversations、messages、message_attachments。
+-- 8. 首页行动卡已改为“咨询学习复盘小助手”，不再展示“生成每日学习总结/预览材料”入口。
 
 CREATE DATABASE IF NOT EXISTS aisumly
   DEFAULT CHARACTER SET utf8mb4
@@ -213,3 +215,29 @@ CREATE TABLE IF NOT EXISTS daily_summary_items (
   CONSTRAINT fk_summary_items_summary_id FOREIGN KEY (summary_id) REFERENCES daily_summaries (id),
   CONSTRAINT fk_summary_items_user_id FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='每日总结条目表；每条总结可反查原始会话、消息和图片';
+
+-- ============================================================
+-- 9. 学习复盘助手消息表
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS review_agent_messages (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '学习复盘助手消息 ID',
+  user_id BIGINT UNSIGNED NOT NULL COMMENT '所属用户 ID',
+  turn_no INT UNSIGNED NOT NULL COMMENT '轮次编号，从 1 递增',
+  role VARCHAR(32) NOT NULL COMMENT '角色：user/assistant/tool',
+  message_type VARCHAR(32) NOT NULL DEFAULT 'normal' COMMENT '消息类型：normal=普通消息，clarification=澄清问题，query_result=查询结果',
+  content LONGTEXT NULL COMMENT '消息内容；role=tool 时存 llm_context',
+  content_format VARCHAR(32) NOT NULL DEFAULT 'markdown' COMMENT '内容格式：plain/markdown/json',
+  sequence_no BIGINT UNSIGNED NOT NULL COMMENT '用户复盘助手内消息顺序号',
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '状态：1=成功，2=生成中，3=失败，4=已取消',
+  error_message TEXT NULL COMMENT '失败原因',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted_at DATETIME NULL COMMENT '软删除时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_review_agent_user_sequence (user_id, sequence_no),
+  KEY idx_review_agent_user_created (user_id, created_at),
+  KEY idx_review_agent_user_turn (user_id, turn_no, sequence_no),
+  KEY idx_review_agent_user_role_created (user_id, role, created_at),
+  CONSTRAINT fk_review_agent_messages_user_id FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='学习复盘助手消息表；每个用户只有一个复盘助手会话';

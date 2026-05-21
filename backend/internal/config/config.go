@@ -129,8 +129,8 @@ func Load() Config {
 
 // loadDotEnv 加载本地环境变量文件，方便开发阶段直接使用 backend/.env。
 func loadDotEnv() {
-	// path := ".env"
-	path := ".env-remote"
+	path := ".env"
+	// path := ".env-remote"
 	godotenv.Load(path)
 }
 

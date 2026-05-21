@@ -1,0 +1,7 @@
+.env
+.env-*
+docker-data/
+../docker-data/
+../.git/
+../.idea/
+../.vscode/

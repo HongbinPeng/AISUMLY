@@ -1,0 +1,50 @@
+
+> aisumly-web@0.1.0 dev
+> vite --host 127.0.0.1
+
+Re-optimizing dependencies because lockfile has changed
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m1116[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5174[22m/[39m
+[2m03:59:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m04:00:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m04:01:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m04:22:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css, /src/auth/AuthContext.jsx[22m
+[2m04:22:42[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/auth/AuthContext.jsx[22m Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m04:22:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m04:23:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m04:23:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m14:18:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/auth/AuthContext.jsx, /src/styles.css[22m
+[2m14:25:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m14:25:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m14:26:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/auth/AuthContext.jsx, /src/styles.css[22m
+[2m14:49:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m14:52:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m16:13:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m
+[2m17:44:56[22m [36m[1m[vite][22m[39m [32mvite.config.js changed, restarting server...[39m
+[2m17:44:56[22m [36m[1m[vite][22m[39m server restarted.
+[2m18:13:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/features/conversations/components/ConversationComposer.jsx, /src/styles.css[22m
+[2m18:13:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/features/review-agent/components/ChatComposer.jsx, /src/styles.css[22m
+[2m18:13:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/ChatInput.jsx, /src/styles.css[22m
+[2m18:14:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ConversationsPage.jsx[22m
+[2m18:14:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m
+[2m18:14:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m
+[2m18:15:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m
+[2m18:15:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/features/review-agent/components/ChatMessage.jsx, /src/styles.css[22m
+[2m18:15:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/features/review-agent/components/EvidencePanel.jsx, /src/styles.css[22m
+[2m18:15:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m18:15:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m18:16:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/ChatInput.jsx, /src/styles.css[22m
+[2m18:17:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m
+[2m18:20:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m
+[2m18:20:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m
+[2m18:20:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m
+[2m18:20:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ReviewAssistantPage.jsx, /src/styles.css[22m
+[2m18:20:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/features/review-agent/components/ChatMessageList.jsx, /src/styles.css[22m
+[2m18:25:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/ChatInput.jsx, /src/styles.css[22m
+[2m18:25:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/ChatInput.jsx, /src/styles.css[22m
+[2m18:34:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m18:34:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/styles.css[22m
+[2m18:34:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ReviewAssistantPage.jsx, /src/styles.css[22m
+[2m18:34:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css, /src/pages/ReviewAssistantPage.jsx[22m

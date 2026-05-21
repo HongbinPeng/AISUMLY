@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 1180px;
+  background: #f4f7fb;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.75;
+  color: #0f172a;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdown-body p {
+  margin: 0.45rem 0;
+}
+
+.markdown-body p:first-child {
+  margin-top: 0;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.55rem 0;
+  padding-left: 1.25rem;
+}
+
+.markdown-body li {
+  margin: 0.25rem 0;
+}
+
+.markdown-body code {
+  border-radius: 4px;
+  background: #e8eef6;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.9em;
+}
+
+.markdown-body pre {
+  overflow-x: auto;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.85rem;
+  margin: 0.65rem 0;
+}
+
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  margin: 0.75rem 0;
+  overflow: hidden;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 13px;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #dbe3ee;
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-body th {
+  background: #f1f5f9;
+  font-weight: 800;
+}
+
+.markdown-body td {
+  word-break: break-word;
+}
+
+.markdown-body blockquote {
+  margin: 0.65rem 0;
+  border-left: 3px solid #bfdbfe;
+  padding-left: 0.85rem;
+  color: #475569;
+}
+
+.app-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.app-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #cbd5e1;
+  background-clip: content-box;
+}
+
+.app-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: content-box;
+}
