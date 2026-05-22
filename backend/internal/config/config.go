@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -17,7 +16,6 @@ type Config struct {
 	OSS      OSSConfig
 	AI       AIConfig
 	Security SecurityConfig
-	CORS     CORSConfig
 }
 
 type AppConfig struct {
@@ -66,14 +64,6 @@ type SecurityConfig struct {
 	RecentContextTTL  time.Duration
 }
 
-type CORSConfig struct {
-	AllowOrigins     []string
-	AllowMethods     []string
-	AllowHeaders     []string
-	ExposeHeaders    []string
-	AllowCredentials bool
-}
-
 func Load() Config {
 	loadDotEnv()
 
@@ -117,21 +107,14 @@ func Load() Config {
 			IdempotencyTTL:    time.Duration(getEnvInt("IDEMPOTENCY_TTL_HOURS", 24)) * time.Hour,
 			RecentContextTTL:  time.Duration(getEnvInt("RECENT_CONTEXT_TTL_DAYS", 7)) * 24 * time.Hour,
 		},
-		CORS: CORSConfig{
-			AllowOrigins:     getEnvList("CORS_ALLOW_ORIGINS", []string{"*"}),
-			AllowMethods:     getEnvList("CORS_ALLOW_METHODS", []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"}),
-			AllowHeaders:     getEnvList("CORS_ALLOW_HEADERS", []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"}),
-			ExposeHeaders:    getEnvList("CORS_EXPOSE_HEADERS", []string{"Content-Length"}),
-			AllowCredentials: getEnvBool("CORS_ALLOW_CREDENTIALS", false),
-		},
 	}
 }
 
 // loadDotEnv 加载本地环境变量文件，方便开发阶段直接使用 backend/.env。
 func loadDotEnv() {
-	path := ".env"
+	// path := ".env"
 	// path := ".env-remote"
-	godotenv.Load(path)
+	godotenv.Load(".env", "../.env")
 }
 
 // getEnv 读取字符串环境变量，未配置时返回默认值。
@@ -166,24 +149,4 @@ func getEnvBool(key string, fallback bool) bool {
 		return fallback
 	}
 	return b
-}
-
-// getEnvList 读取逗号分隔的环境变量列表，并自动去掉空白项。
-func getEnvList(key string, fallback []string) []string {
-	v := os.Getenv(key)
-	if v == "" {
-		return fallback
-	}
-	parts := strings.Split(v, ",")
-	items := make([]string, 0, len(parts))
-	for _, part := range parts {
-		item := strings.TrimSpace(part)
-		if item != "" {
-			items = append(items, item)
-		}
-	}
-	if len(items) == 0 {
-		return fallback
-	}
-	return items
 }

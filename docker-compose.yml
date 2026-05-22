@@ -4,13 +4,13 @@ services:
     container_name: aisumly-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: aisumly
-      MYSQL_USER: penghongbin
-      MYSQL_PASSWORD: 123456
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Shanghai
-    ports:
-      - "3306:3306"
+    ports: #生产环境记得删掉该配置
+      - "3306:3306" 
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_0900_ai_ci
@@ -19,7 +19,7 @@ services:
       - ./docker-data/mysql:/var/lib/mysql
       - ./数据库表设计.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-upenghongbin", "-p123456"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u${MYSQL_USER}", " -p${MYSQL_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -31,7 +31,7 @@ services:
     container_name: aisumly-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
-    ports:
+    ports: #生产环境记得删掉该配置
       - "6379:6379"
     volumes:
       - ./docker-data/redis:/data
@@ -48,10 +48,10 @@ services:
     container_name: aisumly-rabbitmq
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: aisumly
-      RABBITMQ_DEFAULT_PASS: aisumly_pwd
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       TZ: Asia/Shanghai
-    ports:
+    ports: #生产环境记得删掉该配置
       - "5672:5672"
       - "15672:15672"
     volumes:
@@ -70,8 +70,8 @@ services:
       dockerfile: Dockerfile
     container_name: aisumly-backend
     restart: unless-stopped
-    env_file:
-      - ./backend/.env.production
+    env_file: #记得改为自己的.env文件
+      - .env
     depends_on:
       mysql:
         condition: service_healthy

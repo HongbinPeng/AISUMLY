@@ -6,13 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"aisumly/backend/internal/domain/model"
-
-	"gorm.io/gorm"
+	"aisumly/backend/internal/repository"
 )
 
 type DashboardService struct {
-	db *gorm.DB
+	repo *repository.DashboardRepository
 }
 
 type TodayDashboard struct {
@@ -61,8 +59,8 @@ type DashboardReviewAssistantPrompt struct {
 	Prompt      string `json:"prompt"`
 }
 
-func NewDashboardService(db *gorm.DB) *DashboardService {
-	return &DashboardService{db: db}
+func NewDashboardService(repo *repository.DashboardRepository) *DashboardService {
+	return &DashboardService{repo: repo}
 }
 
 func (s *DashboardService) Today(ctx context.Context, userID uint64) (*TodayDashboard, error) {
@@ -80,29 +78,20 @@ func (s *DashboardService) Today(ctx context.Context, userID uint64) (*TodayDash
 		},
 	}
 
-	if err := s.db.WithContext(ctx).Model(&model.Message{}).
-		Where("user_id = ? AND role = ? AND created_at >= ? AND created_at < ? AND deleted_at IS NULL", userID, "user", start, end).
-		Count(&out.QuestionCount).Error; err != nil {
+	var err error
+	if out.QuestionCount, err = s.repo.CountUserMessages(ctx, userID, start, end); err != nil {
 		return nil, err
 	}
-	if err := s.db.WithContext(ctx).Model(&model.Conversation{}).
-		Where("user_id = ? AND created_at >= ? AND created_at < ? AND deleted_at IS NULL", userID, start, end).
-		Count(&out.ConversationCount).Error; err != nil {
+	if out.ConversationCount, err = s.repo.CountConversationsCreated(ctx, userID, start, end); err != nil {
 		return nil, err
 	}
-	if err := s.db.WithContext(ctx).Model(&model.Conversation{}).
-		Where("user_id = ? AND last_active_at >= ? AND last_active_at < ? AND status <> 3 AND deleted_at IS NULL", userID, start, end).
-		Count(&out.ActiveConversationCnt).Error; err != nil {
+	if out.ActiveConversationCnt, err = s.repo.CountActiveConversations(ctx, userID, start, end); err != nil {
 		return nil, err
 	}
-	if err := s.db.WithContext(ctx).Model(&model.Message{}).
-		Where("user_id = ? AND role = ? AND is_understood = ? AND created_at >= ? AND created_at < ? AND deleted_at IS NULL", userID, "assistant", true, start, end).
-		Count(&out.UnderstoodCount).Error; err != nil {
+	if out.UnderstoodCount, err = s.repo.CountAssistantState(ctx, userID, "is_understood", true, start, end); err != nil {
 		return nil, err
 	}
-	if err := s.db.WithContext(ctx).Model(&model.Message{}).
-		Where("user_id = ? AND role = ? AND is_review_later = ? AND created_at >= ? AND created_at < ? AND deleted_at IS NULL", userID, "assistant", true, start, end).
-		Count(&out.ReviewLaterCount).Error; err != nil {
+	if out.ReviewLaterCount, err = s.repo.CountAssistantState(ctx, userID, "is_review_later", true, start, end); err != nil {
 		return nil, err
 	}
 	if out.QuestionCount > 0 {
@@ -124,17 +113,8 @@ func (s *DashboardService) Today(ctx context.Context, userID uint64) (*TodayDash
 }
 
 func (s *DashboardService) loadImageStats(ctx context.Context, userID uint64, start, end time.Time, out *TodayDashboard) error {
-	type row struct {
-		MessageID uint64
-		Count     int64
-	}
-	var rows []row
-	if err := s.db.WithContext(ctx).Table("message_attachments AS a").
-		Select("a.message_id, COUNT(*) AS count").
-		Joins("JOIN messages AS m ON m.id = a.message_id").
-		Where("a.user_id = ? AND a.attachment_type = ? AND m.created_at >= ? AND m.created_at < ? AND m.deleted_at IS NULL", userID, "image", start, end).
-		Group("a.message_id").
-		Scan(&rows).Error; err != nil {
+	rows, err := s.repo.ImageStats(ctx, userID, start, end)
+	if err != nil {
 		return err
 	}
 	for _, row := range rows {
@@ -147,12 +127,8 @@ func (s *DashboardService) loadImageStats(ctx context.Context, userID uint64, st
 }
 
 func (s *DashboardService) loadRecentConversations(ctx context.Context, userID uint64, start, end time.Time, out *TodayDashboard) error {
-	var rows []model.Conversation
-	if err := s.db.WithContext(ctx).
-		Where("user_id = ? AND last_active_at >= ? AND last_active_at < ? AND status <> 3 AND deleted_at IS NULL", userID, start, end).
-		Order("last_active_at DESC, id DESC").
-		Limit(3).
-		Find(&rows).Error; err != nil {
+	rows, err := s.repo.RecentConversations(ctx, userID, start, end, 3)
+	if err != nil {
 		return err
 	}
 	out.RecentConversations = make([]DashboardConversation, 0, len(rows))
@@ -170,20 +146,8 @@ func (s *DashboardService) loadRecentConversations(ctx context.Context, userID u
 }
 
 func (s *DashboardService) loadUnresolvedQuestions(ctx context.Context, userID uint64, start, end time.Time, out *TodayDashboard) error {
-	type assistantRow struct {
-		ID             uint64
-		ConversationID uint64
-		TurnNo         uint
-		IsReviewLater  bool
-		CreatedAt      time.Time
-	}
-	var assistants []assistantRow
-	if err := s.db.WithContext(ctx).Model(&model.Message{}).
-		Select("id, conversation_id, turn_no, is_review_later, created_at").
-		Where("user_id = ? AND role = ? AND created_at >= ? AND created_at < ? AND deleted_at IS NULL AND (is_understood = ? OR is_review_later = ?)", userID, "assistant", start, end, false, true).
-		Order("is_review_later DESC, created_at DESC").
-		Limit(5).
-		Scan(&assistants).Error; err != nil {
+	assistants, err := s.repo.UnresolvedAssistants(ctx, userID, start, end, 5)
+	if err != nil {
 		return err
 	}
 	if len(assistants) == 0 {
@@ -213,10 +177,7 @@ func (s *DashboardService) loadUnresolvedQuestions(ctx context.Context, userID u
 }
 
 func (s *DashboardService) dashboardUserQuestions(ctx context.Context, userID uint64, convIDs []uint64, turnNos []uint) map[string]string {
-	var rows []model.Message
-	_ = s.db.WithContext(ctx).
-		Where("user_id = ? AND role = ? AND conversation_id IN ? AND turn_no IN ? AND deleted_at IS NULL", userID, "user", uniqueUint64s(convIDs), uniqueUints(turnNos)).
-		Find(&rows).Error
+	rows, _ := s.repo.UserQuestionsByTurns(ctx, userID, uniqueUint64s(convIDs), uniqueUints(turnNos))
 	out := make(map[string]string, len(rows))
 	for _, row := range rows {
 		out[reviewPairKey(row.ConversationID, row.TurnNo)] = row.Content
@@ -225,8 +186,7 @@ func (s *DashboardService) dashboardUserQuestions(ctx context.Context, userID ui
 }
 
 func (s *DashboardService) dashboardConversationTitles(ctx context.Context, userID uint64, convIDs []uint64) map[uint64]string {
-	var rows []model.Conversation
-	_ = s.db.WithContext(ctx).Where("user_id = ? AND id IN ?", userID, uniqueUint64s(convIDs)).Find(&rows).Error
+	rows, _ := s.repo.ConversationTitles(ctx, userID, uniqueUint64s(convIDs))
 	out := make(map[uint64]string, len(rows))
 	for _, row := range rows {
 		out[row.ID] = row.Title
@@ -235,12 +195,8 @@ func (s *DashboardService) dashboardConversationTitles(ctx context.Context, user
 }
 
 func (s *DashboardService) loadTopTopics(ctx context.Context, userID uint64, start, end time.Time, out *TodayDashboard) error {
-	var messages []model.Message
-	if err := s.db.WithContext(ctx).
-		Where("user_id = ? AND created_at >= ? AND created_at < ? AND deleted_at IS NULL", userID, start, end).
-		Order("created_at DESC").
-		Limit(100).
-		Find(&messages).Error; err != nil {
+	messages, err := s.repo.RecentMessages(ctx, userID, start, end, 100)
+	if err != nil {
 		return err
 	}
 	counts := map[string]int{}

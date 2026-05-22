@@ -12,6 +12,7 @@ import (
 	"aisumly/backend/internal/domain/model"
 	einochat "aisumly/backend/internal/einoapp/chat"
 	storage "aisumly/backend/internal/infra/oss"
+	"aisumly/backend/internal/repository"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -26,11 +27,12 @@ const (
 )
 
 type ChatService struct {
-	db      *gorm.DB
-	rdb     *redis.Client
-	storage storage.Storage
-	model   einochat.ChatModel
-	cfg     config.Config
+	db       *gorm.DB
+	rdb      *redis.Client
+	storage  storage.Storage
+	fileRepo *repository.FileRepository
+	model    einochat.ChatModel
+	cfg      config.Config
 }
 
 type StreamRequest struct {
@@ -60,8 +62,8 @@ type CreatedMessage struct {
 }
 
 // NewChatService 创建聊天服务，负责消息落库、上下文加载、并发控制和流式 AI 调用。
-func NewChatService(db *gorm.DB, rdb *redis.Client, st storage.Storage, chatModel einochat.ChatModel, cfg config.Config) *ChatService {
-	return &ChatService{db: db, rdb: rdb, storage: st, model: chatModel, cfg: cfg}
+func NewChatService(db *gorm.DB, rdb *redis.Client, st storage.Storage, fileRepo *repository.FileRepository, chatModel einochat.ChatModel, cfg config.Config) *ChatService {
+	return &ChatService{db: db, rdb: rdb, storage: st, fileRepo: fileRepo, model: chatModel, cfg: cfg}
 }
 
 /*
@@ -338,8 +340,8 @@ func (s *ChatService) validateFiles(ctx context.Context, tx *gorm.DB, userID uin
 	if len(fileIDs) == 0 {
 		return nil, nil
 	}
-	var files []model.File
-	if err := tx.WithContext(ctx).Where("user_id = ? AND id IN ? AND upload_status = ? AND deleted_at IS NULL", userID, fileIDs, FileStatusUploaded).Find(&files).Error; err != nil {
+	files, err := s.fileRepo.ListUploadedByIDs(ctx, tx, userID, fileIDs, FileStatusUploaded)
+	if err != nil {
 		return nil, err
 	}
 	if len(files) != len(fileIDs) {
