@@ -314,11 +314,16 @@ func (s *ReviewAgentService) parseIntent(ctx context.Context, history []*schema.
 	messages := []*schema.Message{{Role: schema.System, Content: systemPrompt}}
 	messages = append(messages, history...)
 	messages = append(messages, &schema.Message{Role: schema.User, Content: userInput})
+	// log.Printf("发送给意图分析模型的消息: %v", messages)
 	resp, err := s.model.Generate(ctx, messages, openai.WithExtraFields(
 		map[string]any{
 			"enable_thinking": false,
+			"response_format": map[string]any{
+				"type": "json_object",
+			},
 		},
 	))
+	// log.Printf("resp: %v", resp)
 	if err != nil {
 		return reviewIntent{}, err
 	}
@@ -342,6 +347,7 @@ func (s *ReviewAgentService) streamAnswer(ctx context.Context, history []*schema
 	if len(messages) == 0 || messages[len(messages)-1].Role != schema.User || messages[len(messages)-1].Content != userInput {
 		messages = append(messages, &schema.Message{Role: schema.User, Content: userInput})
 	}
+	// log.Printf("发送给模型的消息: %v", messages)
 	reader, err := s.model.Stream(ctx, messages, openai.WithExtraFields(
 		map[string]any{
 			"enable_thinking": false,
