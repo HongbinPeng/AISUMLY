@@ -35,6 +35,9 @@ export function LoginPage() {
           <div>
             <h1 className="m-0 text-2xl font-black tracking-tight">AISUMLY</h1>
             <p className="mt-1 text-sm text-slate-500">登录后进入学习复盘助手。</p>
+        <a className="mt-1 text-xs text-blue-500 underline" href="/downloads/aisumly-extension.zip" download>
+          下载浏览器扩展
+        </a>
           </div>
         </div>
 
