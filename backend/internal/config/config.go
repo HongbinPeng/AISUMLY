@@ -73,7 +73,7 @@ func Load() Config {
 			Mode: getEnv("GIN_MODE", "debug"),
 		},
 		MySQL: MySQLConfig{
-			DSN: getEnv("MYSQL_DSN", "root:root@tcp(127.0.0.1:3306)/aisumly?charset=utf8mb4&parseTime=True&loc=Local"),
+			DSN: getEnv("MYSQL_DSN", "root:root@tcp(127.0.0.1:3306)/aisumly?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"),
 		},
 		Redis: RedisConfig{
 			Addr:     getEnv("REDIS_ADDR", "127.0.0.1:6379"),

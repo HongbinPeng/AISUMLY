@@ -1,3 +1,5 @@
+import { formatMonthDayTime } from '../../../utils/time.js'
+
 export function ConversationList({ conversations, activeConversationId, loading, onNewConversation, onSelectConversation }) {
   return (
     <aside className="flex min-h-0 flex-col border-r border-slate-200 bg-slate-50">
@@ -29,7 +31,7 @@ export function ConversationList({ conversations, activeConversationId, loading,
                 <div className="truncate text-sm font-black text-slate-900">{conversation.title || '新会话'}</div>
                 <div className="mt-1 flex items-center justify-between gap-3 text-xs text-slate-500">
                   <span>{conversation.message_count || 0} 条</span>
-                  <span className="truncate">{formatTime(conversation.last_active_at)}</span>
+                  <span className="truncate">{formatMonthDayTime(conversation.last_active_at)}</span>
                 </div>
               </button>
             )
@@ -38,11 +40,4 @@ export function ConversationList({ conversations, activeConversationId, loading,
       </div>
     </aside>
   )
-}
-
-function formatTime(value) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }

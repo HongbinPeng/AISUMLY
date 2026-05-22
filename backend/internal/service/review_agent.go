@@ -460,7 +460,7 @@ func (s *ReviewAgentService) queryReviewCards(ctx context.Context, userID uint64
 			AnswerPreview:      cutRunes(assistant.Content, 100),
 			AnswerForLLM:       cutRunes(assistant.Content, 200),
 			SourceTitle:        userMsg.SourceTitle,
-			CreatedAt:          assistant.CreatedAt.Format("2006-01-02 15:04:05"),
+			CreatedAt:          assistant.CreatedAt.Format(time.RFC3339),
 			IsFavorite:         assistant.IsFavorite,
 			IsUnderstood:       assistant.IsUnderstood,
 			IsReviewLater:      assistant.IsReviewLater,

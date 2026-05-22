@@ -70,6 +70,8 @@ services:
       dockerfile: Dockerfile
     container_name: aisumly-backend
     restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
     env_file: #记得改为自己的.env文件
       - .env
     depends_on:

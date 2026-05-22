@@ -1,4 +1,5 @@
 import { StatusButton } from '../../../components/common/StatusButton.jsx'
+import { formatMonthDayTime } from '../../../utils/time.js'
 
 export function EvidenceCard({ card, disabled, onToggle, onOpenDetail, onSaveNote }) {
   return (
@@ -16,7 +17,7 @@ export function EvidenceCard({ card, disabled, onToggle, onOpenDetail, onSaveNot
       <div className="min-w-0">
         <div className="mb-1 flex justify-between gap-3 text-xs text-slate-400">
           <span className="max-w-[230px] truncate">{card.conversation_title || '未命名会话'}</span>
-          <time className="shrink-0">{formatTime(card.created_at)}</time>
+          <time className="shrink-0">{formatMonthDayTime(card.created_at)}</time>
         </div>
         <h3 className="line-clamp-2 text-[15px] font-black leading-5">{card.question || '无用户问题文本'}</h3>
         <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-slate-600">{card.answer_preview || '暂无回答摘要'}</p>
@@ -81,11 +82,4 @@ export function EvidenceCard({ card, disabled, onToggle, onOpenDetail, onSaveNot
       </div>
     </article>
   )
-}
-
-function formatTime(value) {
-  if (!value) return ''
-  const d = new Date(value.replace(' ', 'T'))
-  if (Number.isNaN(d.getTime())) return value
-  return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }

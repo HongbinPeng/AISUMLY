@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it'
 import { MessageStatusEditor } from '../../../components/common/MessageStatusEditor.jsx'
+import { formatClockTime } from '../../../utils/time.js'
 
 const md = new MarkdownIt({ html: false, linkify: true, breaks: true })
 
@@ -33,7 +34,7 @@ export function ConversationMessage({ message, streaming, onMessageUpdated }) {
 
         {!isUser && <MessageStatusEditor message={message} onUpdated={onMessageUpdated} />}
 
-        <div className={`mt-2 text-xs ${isUser ? 'text-blue-100' : 'text-slate-400'}`}>{formatTime(message.created_at)}</div>
+        <div className={`mt-2 text-xs ${isUser ? 'text-blue-100' : 'text-slate-400'}`}>{formatClockTime(message.created_at)}</div>
       </div>
       {isUser && <Avatar label="我" />}
     </div>
@@ -42,11 +43,4 @@ export function ConversationMessage({ message, streaming, onMessageUpdated }) {
 
 function Avatar({ label }) {
   return <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-600">{label}</div>
-}
-
-function formatTime(value) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
