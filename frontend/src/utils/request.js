@@ -6,7 +6,7 @@ export function getStoredAuth() {
   return {
     accessToken: localStorage.getItem('access_token') || '',
     refreshToken: localStorage.getItem('refresh_token') || '',
-    user: JSON.parse(localStorage.getItem('user_info') || 'null'),
+    user: parseStoredUser(),
   }
 }
 
@@ -32,7 +32,7 @@ export async function refreshAccessToken() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken }),
     })
-    const payload = await res.json()
+    const payload = await readJSON(res)
     if (payload.code !== 0 || !payload.data?.access_token) {
       throw new Error(payload.message || '刷新登录态失败')
     }
@@ -46,13 +46,6 @@ export async function refreshAccessToken() {
   }
 }
 
-/**
- * 发起项目统一 JSON 请求，自动携带 access token 并在 401 时刷新登录态。
- * @param {string} path API 路径，必须以 / 开头
- * @param {RequestInit} options fetch 参数
- * @param {boolean} retry 是否允许刷新 token 后重试
- * @returns {Promise<unknown>} 后端 data 字段
- */
 export async function request(path, options = {}, retry = true) {
   const { accessToken } = getStoredAuth()
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) }
@@ -70,7 +63,7 @@ export async function request(path, options = {}, retry = true) {
     }
   }
 
-  const payload = await res.json()
+  const payload = await readJSON(res)
   if (!res.ok || payload.code !== 0) {
     throw new Error(payload.message || '请求失败')
   }
@@ -79,4 +72,23 @@ export async function request(path, options = {}, retry = true) {
 
 export function apiURL(path) {
   return `${API_BASE}${path}`
+}
+
+function parseStoredUser() {
+  const raw = localStorage.getItem('user_info')
+  if (!raw || raw === 'undefined' || raw === 'null') return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    localStorage.removeItem('user_info')
+    return null
+  }
+}
+
+async function readJSON(res) {
+  try {
+    return await res.json()
+  } catch {
+    return { code: -1, message: `接口返回异常：HTTP ${res.status}` }
+  }
 }

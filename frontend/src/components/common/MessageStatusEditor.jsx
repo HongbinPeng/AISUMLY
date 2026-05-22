@@ -44,7 +44,7 @@ export function MessageStatusEditor({ message, compact = false, onUpdated }) {
         inactiveClass="border-slate-200 bg-white text-slate-500 hover:border-yellow-200 hover:bg-yellow-50"
         onClick={() => patch({ is_favorite: !draft.is_favorite })}
       >
-        {draft.is_favorite ? '★ 已收藏' : '☆ 收藏'}
+        {draft.is_favorite ? '已收藏' : '收藏'}
       </StatusButton>
       <StatusButton
         active={draft.is_understood}
@@ -53,7 +53,7 @@ export function MessageStatusEditor({ message, compact = false, onUpdated }) {
         inactiveClass="border-slate-200 bg-white text-slate-500 hover:border-emerald-200 hover:bg-emerald-50"
         onClick={() => patch({ is_understood: !draft.is_understood })}
       >
-        {draft.is_understood ? '✓ 已理解' : '○ 已理解'}
+        {draft.is_understood ? '已理解' : '标记已理解'}
       </StatusButton>
       <StatusButton
         active={draft.is_review_later}
@@ -62,7 +62,7 @@ export function MessageStatusEditor({ message, compact = false, onUpdated }) {
         inactiveClass="border-slate-200 bg-white text-slate-500 hover:border-amber-200 hover:bg-amber-50"
         onClick={() => patch({ is_review_later: !draft.is_review_later })}
       >
-        {draft.is_review_later ? '★ 待复习' : '☆ 待复习'}
+        {draft.is_review_later ? '待复习' : '加入复习'}
       </StatusButton>
       <StatusButton
         active={Boolean(draft.user_note)}

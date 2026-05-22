@@ -7,14 +7,14 @@ import (
 
 	"aisumly/backend/internal/config"
 
-	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
+	"github.com/cloudwego/eino-ext/components/model/openai"
 	einomodel "github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"
 )
 
 type OpenAICompatibleChatModel struct {
 	modelName string
-	model     *einoopenai.ChatModel
+	model     *openai.ChatModel
 }
 
 // NewOpenAICompatibleChatModel 创建 OpenAI 兼容 ChatModel，可直接对接阿里云百炼兼容接口。
@@ -25,7 +25,7 @@ func NewOpenAICompatibleChatModel(ctx context.Context, cfg config.AIConfig) (*Op
 	if cfg.Model == "" {
 		return nil, errors.New("缺少 AI_MODEL 配置")
 	}
-	cm, err := einoopenai.NewChatModel(ctx, &einoopenai.ChatModelConfig{
+	cm, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: cfg.BaseURL,
 		APIKey:  cfg.APIKey,
 		Model:   cfg.Model,

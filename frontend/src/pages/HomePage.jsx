@@ -30,7 +30,10 @@ export function HomePage({ onConsultReview }) {
     let alive = true
     getTodayDashboard()
       .then((data) => {
-        if (alive) setDashboard({ ...emptyDashboard, ...data })
+        if (alive) setDashboard(normalizeDashboard(data))
+      })
+      .catch(() => {
+        if (alive) setDashboard(emptyDashboard)
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -40,7 +43,9 @@ export function HomePage({ onConsultReview }) {
     }
   }, [])
 
-  const date = dashboard.date ? new Date(dashboard.date).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) : ''
+  const date = dashboard.date
+    ? new Date(dashboard.date).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+    : ''
 
   return (
     <main className="col-span-2 min-h-0 w-full overflow-y-auto bg-[#f4f7fb] px-6 py-6">
@@ -48,7 +53,9 @@ export function HomePage({ onConsultReview }) {
         <header className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-[25px] font-black tracking-tight">今天的学习记录</h1>
-            <p className="mt-1 text-sm text-slate-500">{date || '今天'} · {loading ? '正在加载...' : `已沉淀 ${dashboard.conversation_count} 个会话`}</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {date || '今天'} · {loading ? '正在加载...' : `已沉淀 ${dashboard.conversation_count} 个会话`}
+            </p>
           </div>
           <input
             className="h-10 w-[260px] rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
@@ -102,7 +109,9 @@ export function HomePage({ onConsultReview }) {
               {dashboard.unresolved_questions.map((item) => (
                 <div key={item.assistant_message_id}>
                   <div className="line-clamp-1 text-sm font-black">{item.question || '未记录原始问题'}</div>
-                  <div className="mt-1 text-xs text-slate-500">来自 {item.conversation_title || '未命名会话'} · {item.is_review_later ? '标记待复习' : '未标记已理解'}</div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    来自 {item.conversation_title || '未命名会话'} · {item.is_review_later ? '标记待复习' : '未标记已理解'}
+                  </div>
                 </div>
               ))}
             </div>
@@ -125,6 +134,17 @@ export function HomePage({ onConsultReview }) {
       </div>
     </main>
   )
+}
+
+function normalizeDashboard(data) {
+  const next = { ...emptyDashboard, ...(data || {}) }
+  return {
+    ...next,
+    recent_conversations: Array.isArray(next.recent_conversations) ? next.recent_conversations : [],
+    unresolved_questions: Array.isArray(next.unresolved_questions) ? next.unresolved_questions : [],
+    top_topics: Array.isArray(next.top_topics) ? next.top_topics : [],
+    review_assistant: { ...emptyDashboard.review_assistant, ...(next.review_assistant || {}) },
+  }
 }
 
 function MetricCard({ title, value, hint }) {

@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
     let cancelled = false
     if (!stored.accessToken) {
       setBooting(false)
-      return
+      return undefined
     }
     getMe()
       .then((me) => {

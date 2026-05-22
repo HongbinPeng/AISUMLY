@@ -1,8 +1,8 @@
+import { useState } from 'react'
 import { EmptyState } from '../../../components/common/EmptyState.jsx'
 import { cardFilters } from '../constants.js'
 import { EvidenceCard } from './EvidenceCard.jsx'
 import { EvidenceDetailModal } from './EvidenceDetailModal.jsx'
-import { useState } from 'react'
 
 export function EvidencePanel({ cards, filteredCards, activeFilter, updatingMessageIds, onChangeFilter, onResize, onToggleCardState }) {
   const [detailCard, setDetailCard] = useState(null)

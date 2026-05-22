@@ -47,7 +47,7 @@ export function EvidenceDetailModal({ card, disabled, onClose, onToggle, onSaveN
             inactiveClass="border-slate-200 bg-white text-slate-500 hover:border-yellow-200 hover:bg-yellow-50"
             onClick={() => onToggle(card, 'is_favorite')}
           >
-            {card.is_favorite ? '★ 已收藏' : '☆ 收藏'}
+            {card.is_favorite ? '已收藏' : '收藏'}
           </StatusButton>
           <StatusButton
             active={card.is_understood}
@@ -56,7 +56,7 @@ export function EvidenceDetailModal({ card, disabled, onClose, onToggle, onSaveN
             inactiveClass="border-slate-200 bg-white text-slate-500 hover:border-emerald-200 hover:bg-emerald-50"
             onClick={() => onToggle(card, 'is_understood')}
           >
-            {card.is_understood ? '✓ 已理解' : '○ 已理解'}
+            {card.is_understood ? '已理解' : '标记已理解'}
           </StatusButton>
           <StatusButton
             active={card.is_review_later}
@@ -65,7 +65,7 @@ export function EvidenceDetailModal({ card, disabled, onClose, onToggle, onSaveN
             inactiveClass="border-slate-200 bg-white text-slate-500 hover:border-amber-200 hover:bg-amber-50"
             onClick={() => onToggle(card, 'is_review_later')}
           >
-            {card.is_review_later ? '★ 待复习' : '☆ 待复习'}
+            {card.is_review_later ? '待复习' : '加入复习'}
           </StatusButton>
           <button className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-500 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => onSaveNote(card)} type="button">
             备注

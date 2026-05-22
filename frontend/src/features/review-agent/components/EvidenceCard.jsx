@@ -67,10 +67,14 @@ export function EvidenceCard({ card, disabled, onToggle, onOpenDetail, onSaveNot
           >
             备注
           </button>
-          <button className="ml-auto rounded-md px-1.5 py-1 text-xs font-black text-blue-600 hover:bg-blue-50" onClick={(e) => {
-            e.stopPropagation()
-            alert(`后续接入会话详情：${card.conversation_id}`)
-          }} type="button">
+          <button
+            className="ml-auto rounded-md px-1.5 py-1 text-xs font-black text-blue-600 hover:bg-blue-50"
+            onClick={(e) => {
+              e.stopPropagation()
+              alert(`后续接入会话详情：${card.conversation_id}`)
+            }}
+            type="button"
+          >
             打开会话
           </button>
         </div>

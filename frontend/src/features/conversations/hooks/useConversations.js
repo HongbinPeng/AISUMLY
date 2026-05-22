@@ -22,14 +22,6 @@ export function useConversations() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const bottomRef = useRef(null)
 
-  useEffect(() => {
-    refreshConversations()
-  }, [])
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: activeStreaming ? 'smooth' : 'auto', block: 'end' })
-  })
-
   const activeKey = keyOf(activeConversationId)
   const activeConversation = useMemo(() => {
     return conversations.find((conversation) => keyOf(conversation.id) === activeKey) || null
@@ -38,6 +30,14 @@ export function useConversations() {
   const activeInput = inputByConversation[activeKey] || ''
   const activeStreaming = Boolean(streamingByConversation[activeKey])
   const activeError = errorsByConversation[activeKey] || null
+
+  useEffect(() => {
+    refreshConversations()
+  }, [])
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: activeStreaming ? 'smooth' : 'auto', block: 'end' })
+  })
 
   useEffect(() => {
     if (!activeKey || isTempId(activeConversationId) || messagesByConversation[activeKey]) return
