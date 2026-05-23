@@ -9,3 +9,4 @@ docker-data/
 .idea/
 .codex/
 .env.production.example
+*.log
