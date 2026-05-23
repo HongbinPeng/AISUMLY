@@ -27,6 +27,7 @@ const (
 	reviewMessageStatusFailed    int8 = 3
 	reviewContextLimit                = 60
 	reviewContextTTL                  = 7 * 24 * time.Hour
+	reviewStreamLockTTL               = 5 * time.Minute
 	reviewDefaultLimit                = 30
 	reviewMaxLimit                    = 50
 )
@@ -123,15 +124,24 @@ func (s *ReviewAgentService) Stream(ctx context.Context, req ReviewAgentRequest)
 	if req.Message == "" {
 		return nil, errors.New("请输入复盘问题")
 	}
+	lockKey := s.reviewStreamLockKey(req.UserID)
+	ok, err := s.rdb.SetNX(ctx, lockKey, "1", reviewStreamLockTTL).Result()
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errors.New("学习复盘助手正在生成回答，请稍后再试")
+	}
 	events := make(chan ReviewStreamEvent, 16)
 	go func() {
 		defer close(events)
+		defer s.rdb.Del(context.Background(), lockKey)
 		s.run(ctx, req, events)
 	}()
 	return events, nil
 }
 
-// Messages 读取学习复盘助手最近 N 轮可展示消息。优先使用 Redis 最近上下文，未命中再回表。
+// Messages 读取学习复盘助手最近 N 轮可展示消息。优先使用 Redis 最近上下文x，未命中再回表。
 func (s *ReviewAgentService) Messages(ctx context.Context, userID uint64, turns int) ([]ReviewAgentMessageItem, error) {
 	if turns <= 0 {
 		turns = 20
@@ -503,6 +513,10 @@ func (s *ReviewAgentService) createReviewMessage(ctx context.Context, userID uin
 
 func (s *ReviewAgentService) reviewContextKey(userID uint64) string {
 	return fmt.Sprintf("review_agent:context:%d", userID)
+}
+
+func (s *ReviewAgentService) reviewStreamLockKey(userID uint64) string {
+	return fmt.Sprintf("review_agent:streaming:%d", userID)
 }
 
 func (s *ReviewAgentService) pushReviewContext(ctx context.Context, msg model.ReviewAgentMessage) {

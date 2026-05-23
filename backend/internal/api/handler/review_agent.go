@@ -45,14 +45,20 @@ func (h *Handler) reviewAgentChat(c *gin.Context) {
 		Message: req.Message,
 	})
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, 40000, err.Error())
+		code := 40000
+		status := http.StatusBadRequest
+		if err.Error() == "学习复盘助手正在生成回答，请稍后再试" {
+			code = 40902
+			status = http.StatusConflict
+		}
+		response.Error(c, status, code, err.Error())
 		return
 	}
 
-	c.Header("Content-Type", "text/event-stream; charset=utf-8")
-	c.Header("Cache-Control", "no-cache")
-	c.Header("Connection", "keep-alive")
-	c.Header("X-Accel-Buffering", "no")
+	c.Header("Content-Type", "text/event-stream; charset=utf-8") //告诉浏览器这是一个 SSE 流，数据会持续推送而不是一次性返回
+	c.Header("Cache-Control", "no-cache")                        //禁止中间代理/浏览器缓存响应，确保数据实时到达
+	c.Header("Connection", "keep-alive")                         //	保持 TCP 连接不断开，允许服务器持续推送事件
+	c.Header("X-Accel-Buffering", "no")                          //	告诉 Nginx 关闭响应缓冲，否则 Nginx 会把流攒成块再发给客户端，导致前端无法实时收到每条消息
 	c.Status(http.StatusOK)
 
 	flusher, ok := c.Writer.(http.Flusher)
