@@ -419,9 +419,15 @@ func normalizeIntent(intent *reviewIntent) error {
 	return nil
 }
 
+// queryReviewCards 根据 DSL 查询条件，构建学习复盘卡片列表。
+// 流程：查 assistant 消息 → 配对 user 消息 → 查会话标题 → 查附件 → 查文件 → 组装卡片 → 签发预览 URL。
 func (s *ReviewAgentService) queryReviewCards(ctx context.Context, userID uint64, dsl reviewMessageDSL) ([]ReviewMessageCard, error) {
+	// === 第一步：按 DSL 条件查询 assistant 消息（AI 回答）===
 	var assistants []model.Message
-	q := s.db.WithContext(ctx).Where("user_id = ? AND role = ? AND deleted_at IS NULL", userID, "assistant")
+	q := s.db.WithContext(ctx).
+		Where("user_id = ? AND role = ? AND deleted_at IS NULL", userID, "assistant")
+
+	// 时间范围过滤
 	if dsl.StartTime != "" {
 		start, _ := time.ParseInLocation("2006-01-02 15:04:05", dsl.StartTime, time.Local)
 		q = q.Where("created_at >= ?", start)
@@ -430,6 +436,8 @@ func (s *ReviewAgentService) queryReviewCards(ctx context.Context, userID uint64
 		end, _ := time.ParseInLocation("2006-01-02 15:04:05", dsl.EndTime, time.Local)
 		q = q.Where("created_at <= ?", end)
 	}
+
+	// 状态过滤（收藏 / 已理解 / 待复习）
 	if dsl.Filters.IsFavorite != nil {
 		q = q.Where("is_favorite = ?", *dsl.Filters.IsFavorite)
 	}
@@ -439,27 +447,43 @@ func (s *ReviewAgentService) queryReviewCards(ctx context.Context, userID uint64
 	if dsl.Filters.IsReviewLater != nil {
 		q = q.Where("is_review_later = ?", *dsl.Filters.IsReviewLater)
 	}
+
+	// 倒序取 Limit 条（最新的在前）
 	if err := q.Order("created_at DESC").Limit(dsl.Limit).Find(&assistants).Error; err != nil {
 		return nil, err
 	}
 	if len(assistants) == 0 {
 		return nil, nil
 	}
+
+	// === 第二步：批量加载关联数据（避免 N+1 查询）===
+
+	// 2a. 加载配对的 user 消息（一问一答配对）
 	userByPair := s.loadPairedUserMessages(ctx, userID, assistants)
+
+	// 2b. 加载会话标题
 	convTitles := s.loadConversationTitles(ctx, userID, assistants)
+
+	// 2c. 收集所有 user 消息 ID，批量查首个附件
 	userIDs := make([]uint64, 0, len(userByPair))
 	for _, msg := range userByPair {
 		userIDs = append(userIDs, msg.ID)
 	}
 	firstAttachment := s.loadFirstAttachments(ctx, userID, userIDs)
+
+	// 2d. 收集所有 file_id，批量查文件元信息
 	fileIDs := make([]uint64, 0, len(firstAttachment))
 	for _, fileID := range firstAttachment {
 		fileIDs = append(fileIDs, fileID)
 	}
 	files := s.loadReviewFiles(ctx, userID, uniqueUint64s(fileIDs))
+
+	// === 第三步：组装卡片 ===
 	cards := make([]ReviewMessageCard, 0, len(assistants))
 	for _, assistant := range assistants {
+		// 通过 conversation_id + turn_no 找到对应的 user 消息
 		userMsg := userByPair[reviewPairKey(assistant.ConversationID, assistant.TurnNo)]
+
 		card := ReviewMessageCard{
 			AssistantMessageID: assistant.ID,
 			UserMessageID:      userMsg.ID,
@@ -467,14 +491,16 @@ func (s *ReviewAgentService) queryReviewCards(ctx context.Context, userID uint64
 			ConversationTitle:  convTitles[assistant.ConversationID],
 			TurnNo:             assistant.TurnNo,
 			Question:           userMsg.Content,
-			AnswerPreview:      cutRunes(assistant.Content, 100),
-			AnswerForLLM:       cutRunes(assistant.Content, 200),
+			AnswerPreview:      cutRunes(assistant.Content, 200), // 给前端展示的摘要
+			AnswerForLLM:       cutRunes(assistant.Content, 200), // 给下一轮 AI 用的上下文
 			SourceTitle:        userMsg.SourceTitle,
 			CreatedAt:          assistant.CreatedAt.Format(time.RFC3339),
 			IsFavorite:         assistant.IsFavorite,
 			IsUnderstood:       assistant.IsUnderstood,
 			IsReviewLater:      assistant.IsReviewLater,
 		}
+
+		// 如果有附件，签发临时预览 URL
 		if fileID, ok := firstAttachment[userMsg.ID]; ok {
 			card.FirstFileID = &fileID
 			card.HasFile = true

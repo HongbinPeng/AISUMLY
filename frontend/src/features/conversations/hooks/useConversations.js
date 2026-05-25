@@ -3,6 +3,9 @@ import { streamChat } from '../../../api/chat.js'
 import { getConversationMessages, listConversations } from '../../../api/conversations.js'
 import { uploadImageFiles } from '../../../api/files.js'
 
+const INITIAL_MESSAGE_LIMIT = 80
+const LOAD_MORE_MESSAGE_LIMIT = 50
+
 function keyOf(id) {
   return id == null ? '' : String(id)
 }
@@ -18,9 +21,12 @@ export function useConversations() {
   const [inputByConversation, setInputByConversation] = useState({})
   const [streamingByConversation, setStreamingByConversation] = useState({})
   const [errorsByConversation, setErrorsByConversation] = useState({})
+  const [hasMoreByConversation, setHasMoreByConversation] = useState({})
+  const [loadingMoreByConversation, setLoadingMoreByConversation] = useState({})
   const [loadingConversations, setLoadingConversations] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
   const bottomRef = useRef(null)
+  const skipNextAutoScrollRef = useRef(false)
 
   const activeKey = keyOf(activeConversationId)
   const activeConversation = useMemo(() => {
@@ -30,12 +36,19 @@ export function useConversations() {
   const activeInput = inputByConversation[activeKey] || ''
   const activeStreaming = Boolean(streamingByConversation[activeKey])
   const activeError = errorsByConversation[activeKey] || null
+  const activeHasMore = Boolean(hasMoreByConversation[activeKey])
+  const activeLoadingMore = Boolean(loadingMoreByConversation[activeKey])
 
   useEffect(() => {
     refreshConversations()
   }, [])
 
   useEffect(() => {
+    if (activeLoadingMore) return
+    if (skipNextAutoScrollRef.current) {
+      skipNextAutoScrollRef.current = false
+      return
+    }
     bottomRef.current?.scrollIntoView({ behavior: activeStreaming ? 'smooth' : 'auto', block: 'end' })
   })
 
@@ -73,10 +86,41 @@ export function useConversations() {
 
     setLoadingMessages(true)
     try {
-      const data = await getConversationMessages(conversationId, 80)
+      const data = await getConversationMessages(conversationId, INITIAL_MESSAGE_LIMIT)
       setMessagesByConversation((prev) => ({ ...prev, [nextKey]: data.messages || [] }))
+      setHasMoreByConversation((prev) => ({ ...prev, [nextKey]: Boolean(data.has_more) }))
     } finally {
       setLoadingMessages(false)
+    }
+  }
+
+  async function loadMoreMessages(conversationId = activeConversationId) {
+    const nextKey = keyOf(conversationId)
+    if (!nextKey || isTempId(conversationId) || loadingMoreByConversation[nextKey]) return
+    if (!hasMoreByConversation[nextKey]) return
+
+    const currentMessages = messagesByConversation[nextKey] || []
+    const oldestSequenceNo = currentMessages.find((message) => message.sequence_no)?.sequence_no
+    if (!oldestSequenceNo) return
+
+    setLoadingMoreByConversation((prev) => ({ ...prev, [nextKey]: true }))
+    try {
+      const data = await getConversationMessages(conversationId, LOAD_MORE_MESSAGE_LIMIT, oldestSequenceNo)
+      const olderMessages = data.messages || []
+      skipNextAutoScrollRef.current = true
+      setMessagesByConversation((prev) => {
+        const existingMessages = prev[nextKey] || []
+        const existingIds = new Set(existingMessages.map((message) => message.id).filter(Boolean))
+        const dedupedOlderMessages = olderMessages.filter((message) => !message.id || !existingIds.has(message.id))
+        return { ...prev, [nextKey]: [...dedupedOlderMessages, ...existingMessages] }
+      })
+      setHasMoreByConversation((prev) => ({ ...prev, [nextKey]: Boolean(data.has_more) }))
+    } finally {
+      setLoadingMoreByConversation((prev) => {
+        const next = { ...prev }
+        delete next[nextKey]
+        return next
+      })
     }
   }
 
@@ -91,6 +135,7 @@ export function useConversations() {
     }
     setConversations((prev) => [tempConversation, ...prev])
     setMessagesByConversation((prev) => ({ ...prev, [tempId]: [] }))
+    setHasMoreByConversation((prev) => ({ ...prev, [tempId]: false }))
     setActiveConversationId(tempId)
   }
 
@@ -274,12 +319,15 @@ export function useConversations() {
     activeInput,
     activeStreaming,
     activeError,
+    activeHasMore,
+    activeLoadingMore,
     loadingConversations,
     loadingMessages,
     bottomRef,
     createTempConversation,
     refreshConversations,
     selectConversation,
+    loadMoreMessages,
     send,
     setActiveInput,
     updateLocalMessage,

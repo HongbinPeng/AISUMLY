@@ -21,9 +21,12 @@ export function ConversationsPage() {
         streaming={chat.activeStreaming}
         error={chat.activeError}
         loadingMessages={chat.loadingMessages}
+        loadingMoreMessages={chat.activeLoadingMore}
+        hasMoreMessages={chat.activeHasMore}
         bottomRef={chat.bottomRef}
         onInputChange={chat.setActiveInput}
         onSend={chat.send}
+        onLoadMoreMessages={chat.loadMoreMessages}
         onMessageUpdated={chat.updateLocalMessage}
       />
     </main>

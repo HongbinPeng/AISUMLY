@@ -44,7 +44,7 @@ func (s *OSSStorage) SignedPutURL(ctx context.Context, objectKey string, content
 	if s.isMock() {
 		return &SignedURL{URL: "mock://oss-put/" + objectKey, Headers: map[string]string{"Content-Type": contentType}, ExpiresIn: int64(expiresIn.Seconds())}, nil
 	}
-	bucket, err := s.bucket()
+	bucket, err := s.bucket() //创建OSS客户端
 	if err != nil {
 		return nil, err
 	}

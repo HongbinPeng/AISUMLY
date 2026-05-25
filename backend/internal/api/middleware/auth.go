@@ -27,6 +27,9 @@ func Auth(secret string) gin.HandlerFunc {
 		}
 		tokenText := strings.TrimPrefix(header, "Bearer ")
 		token, err := jwt.ParseWithClaims(tokenText, &claims{}, func(token *jwt.Token) (interface{}, error) {
+			if token.Method != jwt.SigningMethodHS256 {
+				return nil, jwt.ErrTokenSignatureInvalid
+			}
 			return []byte(secret), nil
 		})
 		if err != nil || !token.Valid {

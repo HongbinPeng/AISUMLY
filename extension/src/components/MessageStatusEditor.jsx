@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { updateMessage } from '../api/index.js'
 
+function normalizeStatus(value) {
+  return value === true || value === 1
+}
+
 export default function MessageStatusEditor({ message, onUpdated }) {
-  const [isFavorite, setIsFavorite] = useState(message?.is_favorite === 1)
-  const [isUnderstood, setIsUnderstood] = useState(message?.is_understood === 1)
-  const [isReviewLater, setIsReviewLater] = useState(message?.is_review_later === 1)
+  const [isFavorite, setIsFavorite] = useState(normalizeStatus(message?.is_favorite))
+  const [isUnderstood, setIsUnderstood] = useState(normalizeStatus(message?.is_understood))
+  const [isReviewLater, setIsReviewLater] = useState(normalizeStatus(message?.is_review_later))
   const [showNoteEditor, setShowNoteEditor] = useState(false)
   const [noteText, setNoteText] = useState(message?.user_note || '')
   const [saving, setSaving] = useState(false)
@@ -12,9 +16,9 @@ export default function MessageStatusEditor({ message, onUpdated }) {
   // Sync when message changes (e.g. after API response)
   useEffect(() => {
     if (!message) return
-    setIsFavorite(message.is_favorite === 1)
-    setIsUnderstood(message.is_understood === 1)
-    setIsReviewLater(message.is_review_later === 1)
+    setIsFavorite(normalizeStatus(message.is_favorite))
+    setIsUnderstood(normalizeStatus(message.is_understood))
+    setIsReviewLater(normalizeStatus(message.is_review_later))
     setNoteText(message.user_note || '')
     setShowNoteEditor(false)
   }, [message])

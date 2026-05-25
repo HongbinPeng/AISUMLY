@@ -35,7 +35,7 @@ export default function InputBar() {
   const updateConversationPendingImages = useSetAtom(updateConversationPendingImagesAtom)
   const textareaRef = useRef(null)
   const fileInputRef = useRef(null)
-  const { startStream } = useSSE()
+  const { startStream, abort } = useSSE()
   const { uploadImages } = useImageUpload()
 
   // 当前激活会话引用，避免异步回调清空用户已经切换到的新会话输入。
@@ -43,6 +43,12 @@ export default function InputBar() {
   useEffect(() => {
     activeIdRef.current = activeId
   }, [activeId])
+
+  useEffect(() => {
+    return () => {
+      abort()
+    }
+  }, [abort])
 
   // Auto-resize textarea
   useEffect(() => {

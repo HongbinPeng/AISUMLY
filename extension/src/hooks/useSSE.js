@@ -64,21 +64,32 @@ export function useSSE() {
   const abortRef = useRef(null)
 
   const startStream = useCallback(async (requestBody, { onEvent, onComplete, onError }) => {
+    let reader = null
     try {
       const readableStream = await streamChat(requestBody)
-      const reader = readableStream.getReader()
+      reader = readableStream.getReader()
       abortRef.current = reader
 
       await parseSSE(reader, onEvent, onComplete, onError)
-      reader.releaseLock()
     } catch (err) {
-      if (err.name === 'AbortError') return
-      onError?.({ code: 50000, message: err.message || '网络请求失败' })
+      if (err?.name === 'AbortError') return
+      onError?.({ code: 50000, message: err?.message || '网络请求失败' })
+    } finally {
+      if (abortRef.current === reader) {
+        abortRef.current = null
+      }
+      try {
+        reader?.releaseLock?.()
+      } catch {
+        // Reader may already be released after cancellation.
+      }
     }
   }, [])
 
   const abort = useCallback(() => {
-    abortRef.current?.cancel?.()
+    const reader = abortRef.current
+    abortRef.current = null
+    reader?.cancel?.().catch?.(() => {})
   }, [])
 
   return { startStream, abort }

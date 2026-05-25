@@ -2,7 +2,21 @@ import { EmptyState } from '../../../components/common/EmptyState.jsx'
 import { ConversationComposer } from './ConversationComposer.jsx'
 import { ConversationMessage } from './ConversationMessage.jsx'
 
-export function ConversationChat({ conversation, messages, input, streaming, error, loadingMessages, bottomRef, onInputChange, onSend, onMessageUpdated }) {
+export function ConversationChat({
+  conversation,
+  messages,
+  input,
+  streaming,
+  error,
+  loadingMessages,
+  loadingMoreMessages,
+  hasMoreMessages,
+  bottomRef,
+  onInputChange,
+  onSend,
+  onLoadMoreMessages,
+  onMessageUpdated,
+}) {
   return (
     <main className="flex min-h-0 min-w-0 flex-col bg-white">
       <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-slate-200 px-6">
@@ -16,6 +30,18 @@ export function ConversationChat({ conversation, messages, input, streaming, err
       <section className="app-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5">
         <div className="mx-auto flex max-w-[1080px] flex-col gap-4">
           {loadingMessages && <div className="text-sm text-slate-500">正在加载历史消息...</div>}
+          {!loadingMessages && hasMoreMessages && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loadingMoreMessages}
+                onClick={onLoadMoreMessages}
+              >
+                {loadingMoreMessages ? '正在加载...' : '加载更早消息'}
+              </button>
+            </div>
+          )}
           {!loadingMessages && messages.length === 0 && (
             <EmptyState title="暂无消息" description="发送第一条消息，开始一个新的讨论。" />
           )}
